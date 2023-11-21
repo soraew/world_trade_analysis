@@ -13,8 +13,10 @@ from hfuncs.preprocessing import *
 from hfuncs.plotting import *
 
 
-## PREPROCESSING
-# load data
+# %% [markdown]
+# # PREPROCESSING
+# %%
+# # load data
 csvs_root= '../../csvs/'
 data_root= '../../../../data/trade/BACI/'
 data_file_name='product_2017_19.csv'
@@ -28,8 +30,9 @@ products = get_product_data(
     data_file_name=data_file_name,
 )
 
+# %% [markdown]
+# # CHINA/USA'S BIGGEST EXPORT(TELECOMMUNICATION EQUIPMENT)
 # %%
-## CHINA/USA'S BIGGEST EXPORTS
 aggregated = products.groupby(
     ['year', 'economy_label', 'product', 'product_label']
     ).agg({'KUSD':'sum'}).reset_index()
@@ -54,13 +57,14 @@ usa_top5_2017, usa_productlabels_top5_2017 = \
     top_products(aggregated, 'United States of America', 2017)
 
 
-country = 'China'
-product_name = chinese_top5_2017[0]
-product_label = chinese_productlabels_top5_2017[0]
+# %% [markdown]
+# ## CREATE NETWORK
+tele_product_code = chinese_top5_2017[0]
+tele_product_label = chinese_productlabels_top5_2017[0]
 
-ch_G = create_network(
+tele_G = create_network(
     2017,
-    product_name,
+    tele_product_code,
     product_df=products)
 
 # create subgraph
@@ -83,44 +87,106 @@ if select_nodes:
         'Thailand',
         'China, Taiwan Province of']
     select_countries = asia
-    ch_G_sub = ch_G.subgraph(select_countries)
+    tele_subG = tele_G.subgraph(select_countries)
 else:
-    ch_G_sub = ch_G.copy()
-min_kusd = 500000
-new_edges = \
-    [(u, v) for u, v, d in ch_G_sub.edges(data=True) if d['weight'] >= min_kusd]
-ch_G_sub = ch_G.edge_subgraph(new_edges)
+    tele_subG = tele_G.copy()
 
-# plot
-position = nx.circular_layout(ch_G_sub, scale=1.5)
-weights = \
-    get_weights_for_plotting(
-    ch_G_sub,
-    scaler=3.0)
-fig, ax = plot_directed_network(
-    ch_G_sub,
-    ch_G_sub.nodes(),
-    position,
-    weights)
+def filter_nodes(G, countries):
+    new_nodes = \
+        [n for n in G.nodes() if n in countries]
+    subG = G.subgraph(new_nodes)
+    return subG
+
+def filter_edges(G, min_kusd=50000):
+    new_edges = \
+        [(u, v) for u, v, d in G.edges(data=True) if d['weight'] >= min_kusd]
+    subG = G.edge_subgraph(new_edges)
+    return subG
+
+def plot_subG(subG, scaler=1.0, min_kusd=50000, countries=False):
+    if countries:
+        subG = filter_nodes(subG, countries)
+    if min_kusd:
+        subG = filter_edges(subG, min_kusd=min_kusd)
+
+    position = nx.circular_layout(subG, scale=1.5)
+    weights = \
+        get_weights_for_plotting(
+        subG,
+        scaler=scaler)
+    fig, ax = plot_directed_network(
+        subG,
+        subG.nodes(),
+        position,
+        weights)
+    return fig, ax
+
+def create_output_complete_subG(G, countries):
+    # create subgraph with all flows involving m
+    subG = nx.DiGraph()
+    for country in countries:
+        subG.add_node(country)
+    for edge in G.edges():
+        if edge[0] in countries:
+            subG.add_edge(
+                edge[0], edge[1],
+                weight=G.edges[edge]['weight'])
+    return subG
+
+def check_euler(subG):
+    # check if output is complete
+    # |ncountries| - |nflows| + |ncycles|
+    # = 0
+    n_countries = len(subG.nodes())
+    n_flows = len(subG.edges())
+    # n_cycles = nx.algorithms.cycles.find_cycle(subG)
+    simple_cycles = nx.algorithms.cycles.simple_cycles(subG)
+    n_cycles = len(list(simple_cycles))
+
+    n_cycles = len(n_cycles)
+    output_complete = n_countries - n_flows + n_cycles
+    return output_complete
+
+# %% [markdown]
+# ## check okada
+usca = \
+    create_output_complete_subG(
+        tele_subG,
+        ['United States of America', 'Canada'])
+subG = usca.copy()
+subG.add_edge("Canada", "China",
+              weight=3000000)
+subG.add_edge("China", "United States of America",
+              weight=3000000)
+subG = filter_edges(subG, min_kusd=500000)
+plot_subG(subG)
+n_countries = len(subG.nodes())
+n_flows = len(subG.edges())
+simple_cycles = nx.algorithms.cycles.simple_cycles(subG)
+n_cycles = len(list(simple_cycles))
+output_complete = n_countries - n_flows + n_cycles
+print(output_complete)
 
 
-country = 'United States of America'
-product_name = usa_top5_2017[0]
-product_label = usa_productlabels_top5_2017[0]
-usa_G = create_network(
-    2017,
-    product_name,
-    product_df=products)
-select_countries = [
-    'United States of America',
-    'Japan',
-    'Saudi Arabia',
-    'China', ]
+# country = 'United States of America'
+# product_name = usa_top5_2017[0]
+# product_label = usa_productlabels_top5_2017[0]
+# usa_G = create_network(
+#     2017,
+#     product_name,
+#     product_df=products)
+# select_countries = [
+#     'United States of America',
+#     'Japan',
+#     'Saudi Arabia',
+#     'China', ]
 
 
 
 ## TODO
 # - [ ] plot oil network
+# - [ ] get product network again
+#   - [ ] stop filtering with usa or china
 # - [ ] look at supply chain
 # - [ ] read about resillience of trade
 #     - [ ] ![GVC](https://www.oecd-ilibrary.org/science-and-technology/global-value-chain-dependencies-under-the-magnifying-glass_b2489065-en)
@@ -133,34 +199,13 @@ select_countries = [
 #       - [ ] k = 200
 #           - why is this greater than 180?(all countries)
 #     - [ ] create subgraph
-# - [ ] localized network
+# - [ ] **localized network**
 #     - [ ] output complete
 #         - [ ] all flows involving m are included
 #     - [ ] -|ncountries| + |nflows| - |ncycles|
+#     - [ ] try for us, canada first bc it has cycle
 
 
-def create_output_complete_subG(G, countries):
-    # create subgraph with all flows involving m
-    subG = nx.DiGraph()
-    for country in countries:
-        subG.add_node(country)
-    for edge in G.edges():
-        if edge[0] in countries:
-            subG.add_edge(edge[0], edge[1])
-    return subG
-
-
-def check_output_complete(subG):
-    # check if output is complete
-    # -|ncountries| + |nflows| - |ncycles|
-    # -|ncountries| + |nflows| - |nflows| + |ncountries| - |ncycles|
-    # = 0
-    n_countries = len(subG.nodes())
-    n_flows = len(subG.edges())
-    n_cycles = nx.algorithms.cycles.cycle_basis(subG)
-    n_cycles = len(n_cycles)
-    output_complete = -n_countries + n_flows - n_cycles
-    return output_complete
 
 
 
@@ -168,3 +213,5 @@ breakpoint()
 
 
 
+
+# %%
