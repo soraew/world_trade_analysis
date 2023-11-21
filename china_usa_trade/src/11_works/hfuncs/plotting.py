@@ -17,6 +17,7 @@ def get_weights_for_plotting(
     weights = \
         np.fromiter(weights.values(), dtype=float)
     sum_weights = weights.sum()
+    breakpoint()
     weights = \
         weights*(scaler*ncountries/sum_weights)
     return weights
