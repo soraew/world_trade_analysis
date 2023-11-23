@@ -162,3 +162,23 @@ def degree_eigen_centrality(
     
     return country_dc, country_ec
 
+
+def aggregate_products(products):
+    aggregated = products.groupby(
+        ['year', 'economy_label', 'product', 'product_label']
+        ).agg({'KUSD':'sum'}).reset_index()
+    return aggregated
+
+def top_products(aggregated, country, year, n=5):
+    country_exports = \
+        aggregated[aggregated['economy_label']==country]\
+            .sort_values(['year', 'KUSD'], ascending=[True, False])
+    country_top5 = \
+        country_exports.groupby('year').head(n).reset_index()
+    country_top5_year_product_codes = \
+        country_top5[country_top5['year']==year]\
+        ['product'].values
+    country_top5_year_product_labels = \
+        country_top5[country_top5['year']==year]\
+        ['product_label'].values
+    return country_top5_year_product_codes, country_top5_year_product_labels

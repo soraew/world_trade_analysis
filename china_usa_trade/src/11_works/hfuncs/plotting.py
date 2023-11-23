@@ -5,6 +5,8 @@ import plotly.graph_objects as go
 import networkx as nx
 import matplotlib.pyplot as plt
 
+from hfuncs.graphs import *
+
 def get_weights_for_plotting(
     G_sub,
     scaler=5.0,
@@ -17,7 +19,6 @@ def get_weights_for_plotting(
     weights = \
         np.fromiter(weights.values(), dtype=float)
     sum_weights = weights.sum()
-    breakpoint()
     weights = \
         weights*(scaler*ncountries/sum_weights)
     return weights
@@ -47,6 +48,24 @@ def plot_directed_network(
         connectionstyle="arc3,rad=0.1",
         ax=ax)
     plt.show()
+    return fig, ax
+
+def plot_subG(subG, scaler=1.0, min_kusd=5e4, countries=False):
+    if countries:
+        subG = filter_nodes(subG, countries)
+    if min_kusd:
+        subG = filter_edges(subG, min_kusd=min_kusd)
+
+    position = nx.circular_layout(subG, scale=1.5)
+    weights = \
+        get_weights_for_plotting(
+        subG,
+        scaler=scaler)
+    fig, ax = plot_directed_network(
+        subG,
+        subG.nodes(),
+        position,
+        weights)
     return fig, ax
 
 # # create edges

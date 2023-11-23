@@ -6,11 +6,13 @@ from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import plotly.express as px
 import networkx as nx
+import pickle as pkl
 from warnings import filterwarnings
 filterwarnings('ignore')
 
 from hfuncs.preprocessing import *
 from hfuncs.plotting import *
+from hfuncs.graphs import *
 
 
 # %% [markdown]
@@ -33,29 +35,12 @@ products = get_product_data(
 # %% [markdown]
 # # CHINA/USA'S BIGGEST EXPORT(TELECOMMUNICATION EQUIPMENT)
 # %%
-aggregated = products.groupby(
-    ['year', 'economy_label', 'product', 'product_label']
-    ).agg({'KUSD':'sum'}).reset_index()
-
-def top_products(aggregated, country, year, n=5):
-    country_exports = \
-        aggregated[aggregated['economy_label']==country]\
-            .sort_values(['year', 'KUSD'], ascending=[True, False])
-    country_top5 = \
-        country_exports.groupby('year').head(n).reset_index()
-    country_top5_year_product_codes = \
-        country_top5[country_top5['year']==year]\
-        ['product'].values
-    country_top5_year_product_labels = \
-        country_top5[country_top5['year']==year]\
-        ['product_label'].values
-    return country_top5_year_product_codes, country_top5_year_product_labels
+aggregated = aggregate_products(products)
 
 chinese_top5_2017, chinese_productlabels_top5_2017 = \
     top_products(aggregated, 'China', 2017)
 usa_top5_2017, usa_productlabels_top5_2017 = \
     top_products(aggregated, 'United States of America', 2017)
-
 
 # %% [markdown]
 # ## CREATE NETWORK
@@ -67,119 +52,64 @@ tele_G = create_network(
     tele_product_code,
     product_df=products)
 
-# create subgraph
-select_nodes = False
-if select_nodes:
-    asia = [
-        'China',
-        'China, Hong Kong SAR',
-        'Singapore',
-        'Indonesia',
-        'Viet Nam',
-        'New Zealand',
-        'India',
-        'Japan',
-        'Sri Lanka',
-        'Australia',
-        'Malaysia',
-        'Philippines',
-        'Korea, Republic of',
-        'Thailand',
-        'China, Taiwan Province of']
-    select_countries = asia
-    tele_subG = tele_G.subgraph(select_countries)
-else:
-    tele_subG = tele_G.copy()
-
-def filter_nodes(G, countries):
-    new_nodes = \
-        [n for n in G.nodes() if n in countries]
-    subG = G.subgraph(new_nodes)
-    return subG
-
-def filter_edges(G, min_kusd=50000):
-    new_edges = \
-        [(u, v) for u, v, d in G.edges(data=True) if d['weight'] >= min_kusd]
-    subG = G.edge_subgraph(new_edges)
-    return subG
-
-def plot_subG(subG, scaler=1.0, min_kusd=50000, countries=False):
-    if countries:
-        subG = filter_nodes(subG, countries)
-    if min_kusd:
-        subG = filter_edges(subG, min_kusd=min_kusd)
-
-    position = nx.circular_layout(subG, scale=1.5)
-    weights = \
-        get_weights_for_plotting(
-        subG,
-        scaler=scaler)
-    fig, ax = plot_directed_network(
-        subG,
-        subG.nodes(),
-        position,
-        weights)
-    return fig, ax
-
-def create_output_complete_subG(G, countries):
-    # create subgraph with all flows involving m
-    subG = nx.DiGraph()
-    for country in countries:
-        subG.add_node(country)
-    for edge in G.edges():
-        if edge[0] in countries:
-            subG.add_edge(
-                edge[0], edge[1],
-                weight=G.edges[edge]['weight'])
-    return subG
-
-def check_euler(subG):
-    # check if output is complete
-    # |ncountries| - |nflows| + |ncycles|
-    # = 0
-    n_countries = len(subG.nodes())
-    n_flows = len(subG.edges())
-    # n_cycles = nx.algorithms.cycles.find_cycle(subG)
-    simple_cycles = nx.algorithms.cycles.simple_cycles(subG)
-    n_cycles = len(list(simple_cycles))
-
-    n_cycles = len(n_cycles)
-    output_complete = n_countries - n_flows + n_cycles
-    return output_complete
-
 # %% [markdown]
 # ## check okada
-usca = \
+oc_subG = \
     create_output_complete_subG(
-        tele_subG,
-        ['United States of America', 'Canada'])
-subG = usca.copy()
-subG.add_edge("Canada", "China",
-              weight=3000000)
-subG.add_edge("China", "United States of America",
-              weight=3000000)
-subG = filter_edges(subG, min_kusd=500000)
+        tele_G,
+        [
+            'United States of America', 'China',
+            'Canada', 'Mexico',
+            'Canada', 'Viet Nam',
+            'Japan', 'Germany',
+        ])
+subG = oc_subG.copy()
+# cutoff = 1e5 # about 90% of all world trade for telecomm
+cutoff = 2e6
+tele_products = \
+    products[products['product']==tele_product_code]
+tele_sumKUSD = tele_products['KUSD'].sum()
+cutoff_explains = tele_products[tele_products['KUSD']>cutoff].KUSD.sum()\
+    /tele_sumKUSD
+print(f'cutoff explains: {cutoff_explains:.2%} of {tele_product_label[:10]} trade')
+subG = filter_edges(subG, min_kusd=cutoff)
+subG_sum = sum([d['weight'] for u,v,d in subG.edges(data=True)])
+print(f'graph explains: {subG_sum/tele_sumKUSD:.2%} of {tele_product_label[:10]} trade')
 plot_subG(subG)
-n_countries = len(subG.nodes())
-n_flows = len(subG.edges())
-simple_cycles = nx.algorithms.cycles.simple_cycles(subG)
-n_cycles = len(list(simple_cycles))
-output_complete = n_countries - n_flows + n_cycles
-print(output_complete)
+ncountries = len(subG.nodes())
+nflows = len(subG.edges())
+simple_cycles = \
+    list(nx.algorithms.cycles.simple_cycles(subG))
+ncycles = len(simple_cycles)
+gamma = ncountries - nflows + ncycles
+print(gamma)
+simple_cycles
 
 
-# country = 'United States of America'
-# product_name = usa_top5_2017[0]
-# product_label = usa_productlabels_top5_2017[0]
-# usa_G = create_network(
-#     2017,
-#     product_name,
-#     product_df=products)
-# select_countries = [
-#     'United States of America',
-#     'Japan',
-#     'Saudi Arabia',
-#     'China', ]
+# %% [markdown]
+# ### is united states trading with china-affiliated countries?
+# %%
+# get top countries us imports telecomm from(2017)
+tele_products_2017 = \
+    tele_products[tele_products['year']==2017]
+top_us_importers_2017 = \
+    tele_products_2017[\
+        tele_products_2017['partner_label']=='United States of America']\
+            .sort_values('KUSD', ascending=False)\
+            .head(10).economy_label.values.tolist()
+top_us_oc_subG = \
+    create_output_complete_subG(
+        tele_G,
+        top_us_importers_2017)
+# plot
+top_us_oc_subG = filter_edges(top_us_oc_subG, min_kusd=1e6)
+plot_subG(top_us_oc_subG, scaler=1)
+# print(check_gamma(top_us_oc_subG))
+gamma, ncountries, nflows, ncycles, cycles = check_gamma(top_us_oc_subG)
+print(gamma, ncountries, nflows, ncycles)
+print(top_us_importers_2017)
+
+#%%
 
 
 
@@ -204,14 +134,5 @@ print(output_complete)
 #         - [ ] all flows involving m are included
 #     - [ ] -|ncountries| + |nflows| - |ncycles|
 #     - [ ] try for us, canada first bc it has cycle
-
-
-
-
-
-breakpoint()
-
-
-
 
 # %%
