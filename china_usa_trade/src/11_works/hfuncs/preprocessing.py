@@ -82,19 +82,22 @@ def get_product_data(
     elif imports:
         products = products[products['flow']==1]
 
-    # limit to countries
-    partner_country_filter = \
-        (products['partner_label'].isin(countries))
-    economy_filter = \
-        (products['economy_label'].isin(countries))
-    products = \
-        products[partner_country_filter & economy_filter]
-
-    # drop columns that aren't included in commodity codes
-    products.dropna(subset=['Classification'], inplace=True)
-    # limit to level3
-    products = \
-        products[products.Level==3]
+    # --- 11/23 ---
+    # COMMENTED OUT BELOW FOR GETTING PARTNER: 'WORLD'
+    # -------------
+    # # limit to countries
+    # partner_country_filter = \
+    #     (products['partner_label'].isin(countries))
+    # economy_filter = \
+    #     (products['economy_label'].isin(countries))
+    # products = \
+    #     products[partner_country_filter & economy_filter]
+    #
+    # # drop columns that aren't included in commodity codes
+    # products.dropna(subset=['Classification'], inplace=True)
+    # # limit to level3
+    # products = \
+    #     products[products.Level==3]
     
     return products
 

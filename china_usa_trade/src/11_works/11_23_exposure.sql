@@ -85,6 +85,35 @@ where
     and product in ('222', '334', '728', '752', '759', '764', '778', '784', '821', '874')
 ;
 
+create table product_2020 as
+select product, product_label, economy_label, partner_label, flow, KUSD
+from baci_xac
+where
+    year = 2020
+    and product in ('222', '334', '728', '752', '759', '764', '778', '784', '821', '874')
+union all
+select product, product_label, economy_label, partner_label, flow, KUSD
+from baci_xad
+where
+    year = 2020
+    and product in ('222', '334', '728', '752', '759', '764', '778', '784', '821', '874')
+;
+
+create table product_2021 as
+select product, product_label, economy_label, partner_label, flow, KUSD
+from baci_xad
+where
+    year = 2021
+    and product in ('222', '334', '728', '752', '759', '764', '778', '784', '821', '874')
+union all
+select product, product_label, economy_label, partner_label, flow, KUSD
+from baci_xae
+where
+    year = 2021
+    and product in ('222', '334', '728', '752', '759', '764', '778', '784', '821', '874')
+;
+
+
 /* merge above tables into one */
 create table product_2017_19 as
 select * from product_2017
