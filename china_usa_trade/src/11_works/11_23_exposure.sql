@@ -85,6 +85,9 @@ where
     and product in ('222', '334', '728', '752', '759', '764', '778', '784', '821', '874')
 ;
 
+create table baci_xae(year INT(5), economy INT(15), economy_label VARCHAR(200), partner INT(15), partner_label VARCHAR(200), flow INT(5), flow_label VARCHAR(10), product VARCHAR(15), product_label VARCHAR(200), KUSD FLOAT(22), KUSD_footnote FLOAT(10)); 
+load data local infile '/private/tmp/xad' into table baci_xab fields terminated by ',' enclosed by '"' lines terminated by '\n' ignore 1 rows;
+
 create table product_2020 as
 select product, product_label, economy_label, partner_label, flow, KUSD
 from baci_xac
