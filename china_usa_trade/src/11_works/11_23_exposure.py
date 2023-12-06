@@ -7,8 +7,10 @@ import plotly.graph_objects as go
 import plotly.express as px
 import networkx as nx
 import pickle as pkl
+from tqdm import tqdm
 from warnings import filterwarnings
 filterwarnings('ignore')
+import os
 
 from hfuncs.preprocessing import *
 from hfuncs.plotting import *
@@ -17,7 +19,7 @@ from hfuncs.graphs import *
 
 csvs_root= '../../csvs/'
 data_root= '../../../../data/trade/BACI/'
-data_file_name='product_2017_19.csv'
+data_file_name='top_ex_imp_2017_21.csv'
 
 # ONLY EXPORTS
 products = get_product_data(
@@ -38,15 +40,6 @@ usa_top5_2017, usa_productlabels_top5_2017 = \
 
 tele_product_code = chinese_top5_2017[0]
 tele_product_label = chinese_productlabels_top5_2017[0]
-
-# tele_df = \
-#     products[products['product'] == tele_product_code]
-# flow_filter = tele_df['flow'] == 1# imports
-# year_filter = tele_df['year'] == 2017
-# tele_df_filtered = \
-#     tele_df[flow_filter & year_filter]
-# Importer = 'United States of America'
-# Exporter = 'China'
 
 def get_DE(df, importer, exporter, product_code, flow=1, year=2017):
     tmp_df = df[
@@ -117,89 +110,104 @@ def get_exposures(df, intermediate_country, Importer, Exporter,
         importer_intermediate_exposure, \
         intermediate_import_ratio, ie  
 
+def get_IE_df(
+        intermediate_country_list,
+        intermediate_exporter_exposure_list,
+        importer_intermediate_exposure_list,
+        intermediate_import_ratio_list,
+        ie_list):
+    intermediate_exposure_df = \
+        pd.DataFrame(
+            columns=['intermediate_country', 'intermediate_exporter_exposure',
+                    'importer_intermediate_exposure', 'intermediate_import_ratio', 'ie'])
+    intermediate_exposure_df['intermediate_country'] = \
+        intermediate_country_list
+    intermediate_exposure_df['intermediate_exporter_exposure'] = \
+        intermediate_exporter_exposure_list
+    intermediate_exposure_df['importer_intermediate_exposure'] = \
+        importer_intermediate_exposure_list
+    intermediate_exposure_df['intermediate_import_ratio'] = \
+        intermediate_import_ratio_list
+    intermediate_exposure_df['ie'] = ie_list
+    intermediate_exposure_df.sort_values(by=['ie'], ascending=False, inplace=True)
+    return intermediate_exposure_df
+
+# %%
+
+def get_exposures_over_years(products, Importer, Exporter, product_code, years):
+    tmp_df = products[products['product'] == product_code]
+    product_label = tmp_df['product_label'].unique()[0]
+
+    direct_exposure_over_years = []
+    indirect_exposure_over_years = []
+    IE_dfs = []
+
+    for year in tqdm(years):
+        print(year)
+        intermediate_country_list = []
+        intermediate_exporter_exposure_list = []
+        importer_intermediate_exposure_list = []
+        intermediate_import_ratio_list = []
+        ie_list = []
+        for i, intermediate_country in enumerate(tmp_df['partner_label'].unique()):
+            if intermediate_country not in [Importer, Exporter]\
+                and intermediate_country in countries: 
+                intermediate_exporter_exposure, \
+                importer_intermediate_exposure, \
+                intermediate_import_ratio, ie = \
+                    get_exposures(tmp_df, intermediate_country, Importer, Exporter,
+                                product_code, year)
+
+                intermediate_country_list.append(intermediate_country)
+                intermediate_exporter_exposure_list.append(intermediate_exporter_exposure)
+                importer_intermediate_exposure_list.append(importer_intermediate_exposure)
+                intermediate_import_ratio_list.append(intermediate_import_ratio)
+                ie_list.append(ie)
+        direct_exposure = \
+            get_DE(tmp_df, Importer, Exporter, product_code, 1, year)[0]
+        direct_exposure_over_years.append(direct_exposure)
+        try:
+            indirect_exposure = sum(ie_list)[0]
+        except:
+            indirect_exposure = sum(ie_list)
+        indirect_exposure_over_years.append(indirect_exposure)
+        IE_df = get_IE_df(intermediate_country_list, intermediate_exporter_exposure_list, importer_intermediate_exposure_list, intermediate_import_ratio_list, ie_list)
+        IE_dfs.append(IE_df)
+
+    years_dt = pd.to_datetime(years, format='%Y')
+    fig=go.Figure()
+    fig.add_trace(
+        go.Bar(x=years_dt, y=direct_exposure_over_years, name='Direct'))
+    fig.add_trace(
+        go.Bar(x=years_dt, y=indirect_exposure_over_years, name='Indirect'))
+    fig.update_layout(title=f'{product_label}')
+    fig.show()
+    return direct_exposure_over_years, indirect_exposure_over_years, IE_dfs, product_label
 # %%
 Importer = 'United States of America'
 Exporter = 'China'
-tele_df = products[products['product'] == tele_product_code]
-
-exposure_over_years = []
-direct_exposure_over_years = []
-indirect_exposure_over_years = []
-for year in (2017, 2018, 2019):
-    intermediate_country_list = []
-    intermediate_exporter_exposure_list = []
-    importer_intermediate_exposure_list = []
-    intermediate_import_ratio_list = []
-    ie_list = []
-    for i, intermediate_country in enumerate(tele_df['partner_label'].unique()):
-        if intermediate_country not in [Importer, Exporter]\
-            and intermediate_country in countries: 
-            intermediate_exporter_exposure, \
-            importer_intermediate_exposure, \
-            intermediate_import_ratio, ie = \
-                get_exposures(tele_df, intermediate_country, Importer, Exporter,
-                            tele_product_code, year)
-
-            # intermediate_country_list.append(intermediate_country)
-            # intermediate_exporter_exposure_list.append(intermediate_exporter_exposure)
-            # importer_intermediate_exposure_list.append(importer_intermediate_exposure)
-            # intermediate_import_ratio_list.append(intermediate_import_ratio)
-            ie_list.append(ie)
-    direct_exposure = \
-        get_DE(tele_df, Importer, Exporter, tele_product_code, 1, year)[0]
-    direct_exposure_over_years.append(direct_exposure)
-    indirect_exposure = sum(ie_list)[0]
-    indirect_exposure_over_years.append(indirect_exposure)
-# %%
-intermediate_exposure_df = \
-    pd.DataFrame(
-        columns=['intermediate_country', 'intermediate_exporter_exposure',
-                'importer_intermediate_exposure', 'intermediate_import_ratio', 'ie'])
-intermediate_exposure_df['intermediate_country'] = \
-    intermediate_country_list
-intermediate_exposure_df['intermediate_exporter_exposure'] = \
-    intermediate_exporter_exposure_list
-intermediate_exposure_df['importer_intermediate_exposure'] = \
-    importer_intermediate_exposure_list
-intermediate_exposure_df['intermediate_import_ratio'] = \
-    intermediate_import_ratio_list
-intermediate_exposure_df['ie'] = ie_list
-intermediate_exposure_df.sort_values(by=['ie'], ascending=False, inplace=True)
+years = products.year.unique()
 
 # %%
-direct_exposure = get_DE(tele_df, Importer, Exporter, tele_product_code)[0]
-total_exposure = \
-    intermediate_exposure_df['ie'].sum() + direct_exposure
+product_code = '764'
+tele_DEs, tele_IEs, tele_IE_dfs, product_label = \
+    get_exposures_over_years(products, Importer, Exporter, product_code, years)
 # %%
-# ここ途中
-fig = go.Figure()
-fig.add_trace(go.Bar(
-    x=intermediate_exposure_df['intermediate_country'],
-    y=intermediate_exposure_df['ie'],
-    name='Indirect Exposure',
-    marker_color='indianred'
-))
-fig.add_trace(go.Bar(
-    x=[Importer],
-    y=[direct_exposure],
-    name='Direct Exposure',
-    marker_color='lightsalmon'
-))
-fig.add_trace(go.Bar(
-    x=[Importer],
-    y=[total_exposure],
-    name='Total Exposure',
-    marker_color='lightsalmon'
-))
-fig.update_layout(
-    barmode='stack',
-    title=f'Exposure of {Importer} to {Exporter} through {tele_product_label}',
-    xaxis_title='Intermediate Country',
-    yaxis_title='Exposure',
-    legend_title='Exposure Type',
-    font=dict(
-        family="Courier New, monospace",
-        size=18,
-        color="RebeccaPurple"
-    )
-)
+product_code = '759'
+parts_DEs, parts_IEs, parts_IE_dfs, product_label = \
+    get_exposures_over_years(products, Importer, Exporter, product_code, years)
+# %%
+product_code = '752'
+automatic_DEs, automatic_IEs, automatic_IE_dfs, product_label = \
+    get_exposures_over_years(products, Importer, Exporter, product_code, years)
+# %%
+product_code = '778'
+electrical_DEs, electrical_IEs, electrical_IE_dfs, product_label = \
+    get_exposures_over_years(products, Importer, Exporter, product_code, years)
+# %%
+product_code = '821'
+furniture_DEs, furniture_IEs, furniture_IE_dfs, product_label = \
+    get_exposures_over_years(products, Importer, Exporter, product_code, years)
+os.system('say "done"')
+
+# %%
