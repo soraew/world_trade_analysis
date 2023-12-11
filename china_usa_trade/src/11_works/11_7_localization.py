@@ -31,6 +31,7 @@ products = get_product_data(
     data_root=data_root,
     data_file_name=data_file_name,
 )
+countries = get_countries(data_root=data_root)
 
 # %% [markdown]
 # # CHINA/USA'S BIGGEST EXPORT(TELECOMMUNICATION EQUIPMENT)
@@ -52,6 +53,14 @@ tele_G = create_network(
     tele_product_code,
     product_df=products)
 
+
+tele_sub_G = filter_edges(tele_G, min_kusd=1e6)
+fig, ax = \
+    plot_directed_network(
+        tele_G,
+        tele_G.nodes,
+        nx.spring_layout(tele_G, k=2, iterations=100),
+        get_weights_for_plotting(tele_G))
 # %% [markdown]
 # ## check okada
 oc_subG = \

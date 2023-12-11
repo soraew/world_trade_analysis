@@ -1,0 +1,10 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+china_usa_trade/src/11_works/hfuncs/__pycache__/
+src/11_works/hfuncs/__pycache__/
+11_works/hfuncs/__pycache__/
+hfuncs/__pycache__/
+__pycache__/
+*.pyc

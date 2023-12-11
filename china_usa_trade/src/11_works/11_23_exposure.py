@@ -133,7 +133,6 @@ def get_IE_df(
     return intermediate_exposure_df
 
 # %%
-
 def get_exposures_over_years(products, Importer, Exporter, product_code, years):
     tmp_df = products[products['product'] == product_code]
     product_label = tmp_df['product_label'].unique()[0]

@@ -28,7 +28,7 @@ def plot_directed_network(
         select_countries,
         position,
         weights):
-    fig, ax = plt.subplots(figsize=(7, 7))
+    fig, ax = plt.subplots(figsize=(20, 20))
     nx.draw_networkx_nodes(
         G_sub,
         pos=position,
