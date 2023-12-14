@@ -42,14 +42,19 @@ usa_top5_2017, usa_productlabels_top5_2017 = \
     top_products(aggregated, 'United States of America', 2017)
 tele_product_code = chinese_top5_2017[4]
 tele_product_label = chinese_productlabels_top5_2017[4]
+tele_products = products[products['product']==tele_product_code]
+
+kusd_filter = 1e5
+print(tele_products[tele_products['KUSD']>=kusd_filter]['KUSD'].sum()\
+    /tele_products['KUSD'].sum())
+tele_prodcuts = tele_products[tele_products['KUSD']>=kusd_filter]
 
 # %%
 tele_G = create_network(
-    2019,
+    2017,
     tele_product_code,
     product_df=products)
-
-tele_sub_G = filter_edges(tele_G, min_kusd=5e5)
+tele_sub_G = filter_edges(tele_G, min_kusd=kusd_filter)
 fig, ax = \
     plot_directed_network(
         tele_sub_G,
@@ -60,11 +65,3 @@ fig, ax = \
         figsize=(14, 14))
 fig.suptitle(f'{tele_product_label[:20]}')
 plt.show()
-# %%
-
-
-# %%[markdown]
-### What are the countries that US imported/exported(/invested) more from?
-### Do thet depend on military/political alliances or economic ones?
-
-

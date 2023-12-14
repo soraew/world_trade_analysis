@@ -48,30 +48,43 @@ def get_top_codes(df, countries, country, flow=1):
         .agg(
             sum_kusd = ('KUSD', 'sum')
             ).reset_index().sort_values(by='sum_kusd', ascending=False)
-    return top_df.head(5)['product'].values.tolist()
+    # return top_df.head(5)['product'].values.tolist()
+    return top_df
 # %%
 us_trade_file_name = 'us_trade_2017.csv'
 us_top = pd.read_csv(csvs_root+us_trade_file_name)
 us_top = us_top.merge(
     commodity_code, on='product', how='left')
-us_top_export_codes = \
+us_top_exports = \
     get_top_codes(us_top, countries, 'United States of America', flow=2)
-us_top_import_codes = \
+us_top_export_codes = \
+    us_top_exports.head(5)['product'].values.tolist()
+us_top_imports = \
     get_top_codes(us_top, countries, 'United States of America', flow=1)
-
+us_top_import_codes = \
+    us_top_imports.head(5)['product'].values.tolist()
+print('us_top_import_codes', us_top_import_codes)
+print('us_top_export_codes', us_top_export_codes)
+# us_top_import_codes ['781', '333', '764', '752', '542']
+# us_top_export_codes ['334', '781', '776', '784', '764']
+# %%
 
 ch_trade_file_name = 'ch_trade_2017.csv'
 ch_top = pd.read_csv(csvs_root+ch_trade_file_name)
 ch_top = ch_top.merge(
     commodity_code, on='product', how='left')
-ch_top_export_codes = \
+ch_top_exports = \
     get_top_codes(ch_top, countries, 'China', flow=2)
-ch_top_import_codes = \
+ch_top_export_codes = \
+    ch_top_exports.head(5)['product'].values.tolist()
+ch_top_imports = \
     get_top_codes(ch_top, countries, 'China', flow=1)
-ch_top_import_codes
-# top_imports = ch_top_import_codes.groupby('product')['KUSD'].sum().sort_values(ascending=False).head(5)
-del(ch_top)
-
+ch_top_import_codes = \
+    ch_top_imports.head(5)['product'].values.tolist()
+print('ch_top_import_codes', ch_top_import_codes)
+print('ch_top_export_codes', ch_top_export_codes)
+# ch_top_import_codes ['776', '333', '281', '971', '781']
+# ch_top_export_codes ['764', '752', '759', '776', '821']
 # %%
 top_export_imports = list(set(ch_top_import_codes + ch_top_export_codes +\
     us_top_import_codes + us_top_export_codes +\
