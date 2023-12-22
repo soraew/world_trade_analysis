@@ -52,7 +52,7 @@ def plot_directed_network(
     # plt.show()
     return fig, ax
 
-def plot_subG(subG, scaler=1.0, min_kusd=5e4, countries=False):
+def plot_subG(subG, scaler=1.0, min_kusd=5e4, countries=False, figsize=(14, 14)):
     if countries:
         subG = filter_nodes(subG, countries)
     if min_kusd:
@@ -67,7 +67,8 @@ def plot_subG(subG, scaler=1.0, min_kusd=5e4, countries=False):
         subG,
         subG.nodes(),
         position,
-        weights)
+        weights,
+        figsize)
     return fig, ax
 
 # # create edges

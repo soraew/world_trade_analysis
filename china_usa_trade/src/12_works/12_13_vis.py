@@ -19,7 +19,7 @@ from hfuncs.graphs import *
 # # load data
 csvs_root= '../../csvs/'
 data_root= '../../../../data/trade/BACI/'
-data_file_name='product_2017_21.csv'
+data_file_name='top_ex_imp_2017_21_new.csv'
 
 # ONLY EXPORTS
 products = get_product_data(
@@ -55,8 +55,8 @@ tele_prodcuts = tele_products[tele_products['KUSD']>=kusd_filter]
 tele_products = tele_products[tele_products['KUSD']>=1e5]
 tele_products = tele_products[tele_products['flow']==2]
 # %%
-year1 = 2018
-year2 = 2021
+year1 = 2017
+year2 = 2019
 tele_products = tele_products[['year', 'product', 'economy_label', 'partner_label', 'KUSD']]
 tele_1_2 = pd.merge(
     tele_products[tele_products['year'] == year2],
@@ -75,13 +75,18 @@ fig.show()
 tele_1_2.sort_values(by='KUSD', ascending=True).head(20)
 
 #%%
+tele_sub_G = create_network(
+    year1,
+    tele_product_code,
+    product_df=tele_products)
 sub_diff = create_network(
     year2,
     tele_product_code,
     product_df=tele_1_2[tele_1_2['KUSD']>=1e5])
 
 # %%
-tele_sub_G = filter_edges(sub_diff, min_kusd=1e5)
+# tele_sub_G = filter_edges(sub_diff, min_kusd=1e5)
+tele_sub_G = filter_edges(tele_sub_G, min_kusd=1e5)
 c = nx.community.greedy_modularity_communities(tele_sub_G)
 colorscheme = 'Set1'
 cmap = plt.get_cmap(colorscheme)
@@ -120,3 +125,5 @@ for i, community in enumerate(c):
         connectionstyle="arc3,rad=0.1",
         ax=ax)
 
+
+# %%
