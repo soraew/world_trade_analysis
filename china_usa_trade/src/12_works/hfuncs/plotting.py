@@ -6,22 +6,8 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 from hfuncs.graphs import *
+from hfuncs.preprocessing import scale_weights
 
-def get_weights_for_plotting(
-    G_sub,
-    scaler=5.0,
-    ):
-    ncountries = len(G_sub.nodes())
-    weights = \
-        nx.get_edge_attributes(G_sub,'weight')
-    weights = \
-        nx.get_edge_attributes(G_sub,'weight')
-    weights = \
-        np.fromiter(weights.values(), dtype=float)
-    sum_weights = weights.sum()
-    weights = \
-        weights*(scaler*ncountries/sum_weights)
-    return weights
 
 def plot_directed_network(
         G_sub,
@@ -59,10 +45,12 @@ def plot_subG(subG, scaler=1.0, min_kusd=5e4, countries=False, figsize=(14, 14))
         subG = filter_edges(subG, min_kusd=min_kusd)
 
     position = nx.circular_layout(subG, scale=1.5)
-    weights = \
-        get_weights_for_plotting(
+    weights_dict = \
+        scale_weights(
         subG,
         scaler=scaler)
+    weights = \
+        list(weights_dict.values())
     fig, ax = plot_directed_network(
         subG,
         subG.nodes(),

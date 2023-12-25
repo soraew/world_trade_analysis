@@ -11,6 +11,33 @@ from warnings import filterwarnings
 filterwarnings('ignore')
 
 
+def scale_weights(
+    G_sub,
+    scaler=5.0,
+    ):
+    ncountries = len(G_sub.nodes())
+    weights_dict = \
+        nx.get_edge_attributes(G_sub,'weight')
+    edges = list(weights_dict.keys())
+    weights = np.fromiter(weights_dict.values(), dtype=float)
+    sum_weights = weights.sum()
+    weights = weights*(scaler*ncountries/sum_weights)
+    weights_dict = dict(zip(edges, weights))
+    return weights_dict
+
+def log_log_log_scaler(weight):
+    return np.log(np.log(np.log(weight + 1.0) + 1.0) + 1.0)
+
+def log_scale_weights(G):
+    tmp_G = G.copy()
+    weights_dict = \
+        nx.get_edge_attributes(tmp_G, 'weight')
+    log_weights = \
+        {edge: log_log_log_scaler(weight) \
+            for edge, weight in weights_dict.items()}
+    nx.set_edge_attributes(tmp_G, log_weights, 'weight')
+    return tmp_G
+
 # BASIC PREPROCESSING
 def replace_0(string):
     try:
