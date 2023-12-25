@@ -52,79 +52,266 @@ tele_products = tele_products[tele_products['flow']==2]
 # %%
 year1 = 2017
 year2 = 2019
+kusd_filter = 1e5
 tele_products = tele_products[['year', 'product', 'economy_label', 'partner_label', 'KUSD']]
-tele_1_2 = pd.merge(
-    tele_products[tele_products['year'] == year2],
-    tele_products[tele_products['year'] == year1],
-    on=['product', 'partner_label', 'economy_label'],
-    how='inner',
-    suffixes=('_2', '_1'))
-tele_1_2['KUSD'] = \
-    tele_1_2['KUSD_2'] - tele_1_2['KUSD_1']
 
-tele_1_2 = tele_1_2[['product', 'economy_label', 'partner_label', 'KUSD']]
-tele_1_2['year'] = year2
-#%%
-print('countries that trade dropped significantly: ')
-tele_1_2.sort_values(by='KUSD', ascending=True).head(20)
-
-#%%
 tele_sub_G_17 = create_network(
     year1,
     tele_product_code,
     product_df=tele_products)
-sub_diff = create_network(
+tele_sub_G_17 = filter_edges(tele_sub_G_17, min_kusd=kusd_filter)
+
+tele_sub_G_19 = create_network(
     year2,
     tele_product_code,
-    product_df=tele_1_2[tele_1_2['KUSD']>=1e5])
+    product_df=tele_products)
+tele_sub_G_19 = filter_edges(tele_sub_G_19, min_kusd=kusd_filter)
 
 # %%
-# tele_sub_G = filter_edges(sub_diff, min_kusd=1e5)
-sub_G = tele_sub_G_17.copy()
-plot_subG(
-    sub_G,
-    scaler=1.0,
-    min_kusd=1e5,
-    countries=False,
-    figsize=(14, 14))
+def log_weight_scaler(weight):
+    return np.log(np.log(np.log(weight + 1.0) + 1.0) + 1.0)
+
+def log_scale_weights(G):
+    tmp_G = G.copy()
+    weights_dict = \
+        nx.get_edge_attributes(tmp_G, 'weight')
+    log_weights = \
+        {edge: log_weight_scaler(weight) \
+            for edge, weight in weights_dict.items()}
+    nx.set_edge_attributes(tmp_G, log_weights, 'weight')
+    return tmp_G
+tele_sub_G_17 = log_scale_weights(tele_sub_G_17)
+tmp_weights = \
+    nx.get_edge_attributes(tele_sub_G_17, 'weight')
+fig = px.histogram(list(tmp_weights.values()))
+fig.show()
+
 # %%
-def plot_communities(G, min_kusd=1e5, figsize=(14, 14)):
-    G = filter_edges(G, min_kusd)
-    c = nx.community.greedy_modularity_communities(G)
-    colorscheme = 'Set1'
-    cmap = plt.get_cmap(colorscheme)
-    colors = [cmap(i) for i in np.linspace(0.1, 0.9, len(c))]
+def community_layout(g, partition):
+    """
+    Compute the layout for a modular graph.
+    Arguments:
+    ----------
+    g -- networkx.Graph or networkx.DiGraph instance
+        graph to plot
+    partition -- dict mapping int node -> int community
+        graph partitions
+    Returns:
+    --------
+    pos -- dict mapping int node -> (float x, float y)
+        node positions
+    """
+    # partition is dict of form: {ni: ci, ...}
+    pos_communities_nodes, pos_communities, hypergraph = \
+        _position_communities(g, partition, scale=4.)
 
-    for i, community in enumerate(c):
-        figsize = (14, 14)
-        fig, ax = plt.subplots(figsize=figsize)
+    pos_nodes = _position_nodes(g, partition, scale=1., k=0.9)
 
-        community = list(community)
+    # COMBINE POSITIONS!!!!!
+    pos = dict()
+    for node in g.nodes():
+        pos[node] = pos_communities_nodes[node] + pos_nodes[node]
 
-        sub_G_tmp = G.subgraph(community)
-        select_countries = community
-        position = nx.circular_layout(sub_G_tmp, scale=2.5)
-        weights = \
-            get_weights_for_plotting(sub_G_tmp, scaler=2.0)
+    return pos
 
+def _position_communities(g, partition, **kwargs):
+    # CREATE A WEIGHTED GRAPH, IN WHICH EACH NODE CORRESPONDS TO A COMMUNITY,
+    # AND EACH EDGE WEIGHT TO THE NUMBER OF EDGES BETWEEN COMMUNITIES
+
+    # returns dict of form: {(ci, cj): [(ni, nj), ...], ...}
+    between_community_edges = _find_between_community_edges(g, partition)
+
+    communities = set(partition.values())
+    hypergraph = nx.DiGraph()
+    hypergraph.add_nodes_from(communities)
+    # below is the key component of this function
+    for (ci, cj), edges in between_community_edges.items():
+        hypergraph.add_edge(ci, cj, weight=len(edges))
+
+    # find layout for communities
+    pos_communities = nx.spring_layout(hypergraph, **kwargs)
+
+    # set node positions to position of community
+    pos = dict()
+    for node, community in partition.items():
+        pos[node] = pos_communities[community]
+
+    return pos, pos_communities, hypergraph
+
+# just returns nodes that are between communities
+def _find_between_community_edges(g, partition):
+    edges = dict()
+    for (ni, nj) in g.edges():
+        ci = partition[ni]
+        cj = partition[nj]
+        if ci != cj:
+            try:
+                edges[(ci, cj)] += [(ni, nj)]
+            except KeyError:
+                edges[(ci, cj)] = [(ni, nj)]
+    return edges
+
+# positions nodes within communities.
+def _position_nodes(g, partition, **kwargs):
+    communities = dict()
+    for node, community in partition.items():
+        try:
+            communities[community] += [node]
+        except KeyError:
+            communities[community] = [node]
+
+    pos = dict()
+    for ci, nodes in communities.items():
+        subgraph = g.subgraph(nodes)
+        pos_subgraph = nx.spring_layout(subgraph, **kwargs)
+        pos.update(pos_subgraph)
+
+    return pos
+
+# for each node, get the community it belongs to
+def get_community_partition(sub_G):
+    communities = nx.community.greedy_modularity_communities(sub_G)
+    communities = list(communities)
+    partition = dict()
+    for i, community in enumerate(communities):
+        for country in community:
+            partition[country] = i
+    return partition
+
+# %%
+def plot_communities(sub_G, partition, pos, figsize=(8, 8)):
+    fig, ax = plt.subplots(figsize=figsize)
+    # position = nx.circular_layout(sub_G, scale=2.5)
+    weights_dict = \
+        scale_weights(sub_G, scaler=1.0)
+    weights = \
+        np.fromiter(weights_dict.values(), dtype=float)
+    log_weights = \
+        1/4*np.log(weights+1.0)
+
+    communities = set(partition.values())
+    cmap = plt.get_cmap('Set1')
+    colors = \
+        [cmap(i) for i in np.linspace(0.2, 0.7, len(communities))]
+    for i, community in enumerate(communities):
+        sub_G_tmp = sub_G.subgraph(
+            [node for node in sub_G.nodes() if partition[node]==community])
         nx.draw_networkx_nodes(
             sub_G_tmp,
-            pos=position,
+            pos=pos,
             node_color=colors[i],
             ax=ax,)
-        nx.draw_networkx_labels(
-            sub_G_tmp,
-            labels=dict(zip(select_countries, select_countries)),
-            pos=position,
-            font_size=11,
-            ax=ax,)
-        nx.draw_networkx_edges(
-            sub_G_tmp, position,
-            edgelist=sub_G_tmp.edges(),
-            width=weights,
-            connectionstyle="arc3,rad=0.1",
-            ax=ax)
-        plt.show()
+    nx.draw_networkx_labels(
+        sub_G,
+        labels=dict(zip(sub_G.nodes(), sub_G.nodes())),
+        pos=pos,
+        font_size=11,
+        ax=ax,)
+    nx.draw_networkx_edges(
+        sub_G, pos,
+        edgelist=sub_G.edges(),
+        width=log_weights,
+        connectionstyle="arc3,rad=0.1",
+        ax=ax,)
+    plt.show()
 
+# %% [markdown]
+# ## Plot full tele network for 2017
+# %%
+sub_G = tele_sub_G_17.copy()
+partition = get_community_partition(sub_G)
+pos = community_layout(sub_G, partition)
+plot_communities(sub_G, partition, pos, figsize=(14, 14))
+
+# %% [markdown]
+# ## Plot full tele network for 2019
+# %%
+sub_G = tele_sub_G_19.copy()
+sub_G.remove_node('Latvia')
+sub_G.remove_node('Lithuania')
+partition = get_community_partition(sub_G)
+pos = community_layout(sub_G, partition)
+plot_communities(sub_G, partition, pos, figsize=(14, 14))
 
 # %%
+debug=False
+if debug:
+    # debugging color diff within communities
+    sub_G = tele_sub_G_17.copy()
+
+    partition = get_community_partition(sub_G)
+    # pos = community_layout(sub_G, partition)
+
+    com_2_selected = \
+        ['Egypt', 'Iraq', 'Iran (Islamic Republic of)', 'Qatar', 'Saudi Arabia',
+        'United Arab Emirates']
+    com_0_selected = \
+        ['United States of America', 'China, Hong Kong SAR',
+        'Singapore']
+    tot_selected = com_2_selected + com_0_selected
+
+    partition_node = \
+        {key:val for key, val in partition.items() if val in [2, 0]}
+    partition_node = \
+        {key:val for key, val in partition_node.items() if key in tot_selected}
+    pos_node = _position_nodes(sub_G, partition_node)
+    nodes_node = list(partition_node.keys())
+    sub_G_node = sub_G.subgraph(nodes_node)
+
+    pos_communities_nodes, pos_communities, hypergraph = \
+        _position_communities(sub_G, partition, scale=4.)
+    pos_node_node = _position_nodes(sub_G, partition, scale=1., k=0.9)
+    # COMBINE POSITIONS!!!!!
+    pos_node = dict()
+    for node in sub_G.nodes():
+        pos_node[node] = pos_communities_nodes[node] + pos_node_node[node]
+
+    # plot_communities(sub_G_node, partition_node, pos, figsize=(14, 14))
+    figsize = (14, 14)
+    partition = partition_node
+    sub_G = sub_G_node
+    pos = pos_node
+
+    fig, ax = plt.subplots(figsize=figsize)
+    # position = nx.circular_layout(sub_G, scale=2.5)
+    weights_dict = \
+        scale_weights(sub_G, scaler=1.0)
+    weights = \
+        np.fromiter(weights_dict.values(), dtype=float)
+    log_weights = \
+        1/4*np.log(weights+1.0)
+
+    colorscheme = 'Set1'
+    cmap = plt.get_cmap(colorscheme)
+    colors = [cmap(i) for i in np.linspace(0.2, 0.7, 2)]
+
+    sub_G_tmp_0 = sub_G.subgraph(com_0_selected)
+    partition_tmp_0 = \
+        {key:val for key, val in partition.items() if key in com_0_selected}
+    sub_G_tmp_2 = sub_G.subgraph(com_2_selected)
+    partition_tmp_2 = \
+        {key:val for key, val in partition.items() if key in com_2_selected}
+    nx.draw_networkx_nodes(
+        sub_G_tmp_2,
+        pos=pos,
+        node_color=colors[0],
+        ax=ax,)
+    nx.draw_networkx_nodes(
+        sub_G_tmp_0,
+        pos=pos,
+        node_color=colors[1],
+        ax=ax,)
+
+    nx.draw_networkx_labels(
+        sub_G,
+        labels=dict(zip(sub_G.nodes(), sub_G.nodes())),
+        pos=pos,
+        font_size=11,
+        ax=ax,)
+    nx.draw_networkx_edges(
+        sub_G, pos,
+        edgelist=sub_G.edges(),
+        width=log_weights,
+        connectionstyle="arc3,rad=0.1",
+        ax=ax,)
+    plt.show()
