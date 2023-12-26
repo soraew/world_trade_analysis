@@ -51,7 +51,8 @@ tele_products = tele_products[tele_products['KUSD']>=kusd_filter]
 tele_products = tele_products[tele_products['flow']==2]
 # %%
 year1 = 2017
-year2 = 2019
+year2 = 2018
+year3 = 2019
 kusd_filter = 1e5
 tele_products = tele_products[['year', 'product', 'economy_label', 'partner_label', 'KUSD']]
 
@@ -60,6 +61,12 @@ tele_sub_G_17 = create_network(
     tele_product_code,
     product_df=tele_products)
 tele_sub_G_17 = filter_edges(tele_sub_G_17, min_kusd=kusd_filter)
+
+tele_sub_G_18 = create_network(
+    year2,
+    tele_product_code,
+    product_df=tele_products)
+tele_sub_G_18 = filter_edges(tele_sub_G_18, min_kusd=kusd_filter)
 
 tele_sub_G_19 = create_network(
     year2,
@@ -213,105 +220,159 @@ def plot_communities(sub_G, partition, pos, figsize=(8, 8)):
         width=log_weights,
         connectionstyle="arc3,rad=0.1",
         ax=ax,)
-    plt.show()
+    # plt.show()
+    return fig, ax
 
-# %% [markdown]
-# ## Plot full tele network for 2017
 # %%
-sub_G = tele_sub_G_17.copy()
+# FIGSIZE = (14, 14) # for Interactive
+FIGSIZE = (7, 7) # for Term
+# %%
+year = 2017
+tele_sub_G_tmp = create_network(
+    year,
+    tele_product_code,
+    product_df=tele_products)
+tele_sub_G_tmp = filter_edges(tele_sub_G_tmp, min_kusd=kusd_filter)
+
+sub_G = tele_sub_G_tmp.copy()
+# sub_G.remove_node('Latvia')
+# sub_G.remove_node('Lithuania')
 partition = get_community_partition(sub_G)
 pos = community_layout(sub_G, partition)
-plot_communities(sub_G, partition, pos, figsize=(14, 14))
+fig, ax = plot_communities(sub_G, partition, pos, figsize=FIGSIZE)
+plt.title(f'{year} {tele_product_code} Trade Network')
+plt.show()
 
-# %% [markdown]
-# ## Plot full tele network for 2019
-# %%
-sub_G = tele_sub_G_19.copy()
-sub_G.remove_node('Latvia')
-sub_G.remove_node('Lithuania')
+year = 2018
+tele_sub_G_tmp = create_network(
+    year,
+    tele_product_code,
+    product_df=tele_products)
+tele_sub_G_tmp = filter_edges(tele_sub_G_tmp, min_kusd=kusd_filter)
+
+sub_G = tele_sub_G_tmp.copy()
+# sub_G.remove_node('Latvia')
+# sub_G.remove_node('Lithuania')
 partition = get_community_partition(sub_G)
 pos = community_layout(sub_G, partition)
-plot_communities(sub_G, partition, pos, figsize=(14, 14))
+fig, ax = plot_communities(sub_G, partition, pos, figsize=FIGSIZE)
+plt.title(f'{year} {tele_product_code} Trade Network')
+plt.show()
+
+year = 2019
+tele_sub_G_tmp = create_network(
+    year,
+    tele_product_code,
+    product_df=tele_products)
+tele_sub_G_tmp = filter_edges(tele_sub_G_tmp, min_kusd=kusd_filter)
+
+sub_G = tele_sub_G_tmp.copy()
+# sub_G.remove_node('Latvia')
+# sub_G.remove_node('Lithuania')
+partition = get_community_partition(sub_G)
+pos = community_layout(sub_G, partition)
+fig, ax = plot_communities(sub_G, partition, pos, figsize=FIGSIZE)
+plt.title(f'{year} {tele_product_code} Trade Network')
+plt.show()
+
+year = 2020
+tele_sub_G_tmp = create_network(
+    year,
+    tele_product_code,
+    product_df=tele_products)
+tele_sub_G_tmp = filter_edges(tele_sub_G_tmp, min_kusd=kusd_filter)
+
+sub_G = tele_sub_G_tmp.copy()
+# sub_G.remove_node('Latvia')
+# sub_G.remove_node('Lithuania')
+partition = get_community_partition(sub_G)
+pos = community_layout(sub_G, partition)
+fig, ax = plot_communities(sub_G, partition, pos, figsize=FIGSIZE)
+plt.title(f'{year} {tele_product_code} Trade Network')
+plt.show()
+
+year = 2021
+tele_sub_G_tmp = create_network(
+    year,
+    tele_product_code,
+    product_df=tele_products)
+tele_sub_G_tmp = filter_edges(tele_sub_G_tmp, min_kusd=kusd_filter)
+
+sub_G = tele_sub_G_tmp.copy()
+# sub_G.remove_node('Latvia')
+# sub_G.remove_node('Lithuania')
+partition = get_community_partition(sub_G)
+pos = community_layout(sub_G, partition)
+fig, ax = plot_communities(sub_G, partition, pos, figsize=FIGSIZE)
+plt.title(f'{year} {tele_product_code} Trade Network')
+plt.show()
 
 # %%
-debug=False
-if debug:
-    # debugging color diff within communities
-    sub_G = tele_sub_G_17.copy()
+def plot_hist(year, product_code, sub_G):
+    tmp_weights = \
+        nx.get_edge_attributes(sub_G, 'weight')
+    fig = px.histogram(list(tmp_weights.values()))
+    fig.update_layout(
+        title=f'{year} {product_code} Trade Network',
+    )
+    fig.show()
+# %%
+FIGSIZE = (14, 14)
+years = (2017, 2019)
+product_code = '764'
+product_df = products
+kusd_filter = 1e5
 
-    partition = get_community_partition(sub_G)
-    # pos = community_layout(sub_G, partition)
+for year in years:
+    tmp_G = create_network(
+        year,
+        product_code,
+        product_df=product_df.copy())
+    tmp_G = filter_edges(tmp_G, min_kusd=kusd_filter)
+    tmp_G = log_scale_weights(tmp_G)
 
-    com_2_selected = \
-        ['Egypt', 'Iraq', 'Iran (Islamic Republic of)', 'Qatar', 'Saudi Arabia',
-        'United Arab Emirates']
-    com_0_selected = \
-        ['United States of America', 'China, Hong Kong SAR',
-        'Singapore']
-    tot_selected = com_2_selected + com_0_selected
+    partition = get_community_partition(tmp_G)
+    pos = community_layout(tmp_G, partition)
+    fig, ax = plot_communities(tmp_G, partition, pos, figsize=FIGSIZE)
 
-    partition_node = \
-        {key:val for key, val in partition.items() if val in [2, 0]}
-    partition_node = \
-        {key:val for key, val in partition_node.items() if key in tot_selected}
-    pos_node = _position_nodes(sub_G, partition_node)
-    nodes_node = list(partition_node.keys())
-    sub_G_node = sub_G.subgraph(nodes_node)
-
-    pos_communities_nodes, pos_communities, hypergraph = \
-        _position_communities(sub_G, partition, scale=4.)
-    pos_node_node = _position_nodes(sub_G, partition, scale=1., k=0.9)
-    # COMBINE POSITIONS!!!!!
-    pos_node = dict()
-    for node in sub_G.nodes():
-        pos_node[node] = pos_communities_nodes[node] + pos_node_node[node]
-
-    # plot_communities(sub_G_node, partition_node, pos, figsize=(14, 14))
-    figsize = (14, 14)
-    partition = partition_node
-    sub_G = sub_G_node
-    pos = pos_node
-
-    fig, ax = plt.subplots(figsize=figsize)
-    # position = nx.circular_layout(sub_G, scale=2.5)
-    weights_dict = \
-        scale_weights(sub_G, scaler=1.0)
-    weights = \
-        np.fromiter(weights_dict.values(), dtype=float)
-    log_weights = \
-        1/4*np.log(weights+1.0)
-
-    colorscheme = 'Set1'
-    cmap = plt.get_cmap(colorscheme)
-    colors = [cmap(i) for i in np.linspace(0.2, 0.7, 2)]
-
-    sub_G_tmp_0 = sub_G.subgraph(com_0_selected)
-    partition_tmp_0 = \
-        {key:val for key, val in partition.items() if key in com_0_selected}
-    sub_G_tmp_2 = sub_G.subgraph(com_2_selected)
-    partition_tmp_2 = \
-        {key:val for key, val in partition.items() if key in com_2_selected}
-    nx.draw_networkx_nodes(
-        sub_G_tmp_2,
-        pos=pos,
-        node_color=colors[0],
-        ax=ax,)
-    nx.draw_networkx_nodes(
-        sub_G_tmp_0,
-        pos=pos,
-        node_color=colors[1],
-        ax=ax,)
-
-    nx.draw_networkx_labels(
-        sub_G,
-        labels=dict(zip(sub_G.nodes(), sub_G.nodes())),
-        pos=pos,
-        font_size=11,
-        ax=ax,)
-    nx.draw_networkx_edges(
-        sub_G, pos,
-        edgelist=sub_G.edges(),
-        width=log_weights,
-        connectionstyle="arc3,rad=0.1",
-        ax=ax,)
+    plt.title(f"{year} product:{product_code}", fontsize=25)
     plt.show()
+
+# %%
+def plot_communities_years(
+        years,
+        product_code,
+        product_df,
+        kusd_filter=1e5,
+        figsize=(8, 8)):
+    for year in years:
+        tmp_G = create_network(
+            year,
+            product_code,
+            product_df=product_df.copy())
+        tmp_G = filter_edges(tmp_G, min_kusd=kusd_filter)
+        tmp_G = log_scale_weights(tmp_G)
+
+        partition = get_community_partition(tmp_G)
+        pos = community_layout(tmp_G, partition)
+        fig, ax = plot_communities(tmp_G, partition, pos, figsize=figsize)
+
+        plt.title(f"{year} product:{product_code}", fontsize=25)
+        plt.show()
+# %%
+FIGSIZE = (14, 14)
+KUSD_FILTER = 1e5
+YEARS = (2017, 2019)
+PRODUCTS = [
+    '764', # Telecommunication equipment, n.e.s. & parts, ...
+    '776', # Cathode valves & tubes(semiconductors)
+    '778', # Electrical machinery & apparatus, n.e.s.
+]
+# Telecommunication equipment, n.e.s. & parts, ...
+for product in PRODUCTS:
+    plot_communities_years(
+        YEARS,
+        product, # product_code
+        products, # DataFrame
+        kusd_filter=KUSD_FILTER,
+        figsize=FIGSIZE)
