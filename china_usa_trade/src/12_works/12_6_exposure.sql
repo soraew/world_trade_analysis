@@ -1,24 +1,39 @@
 
-products = 
-('281', '764', '874', '782', '759', '333', '728',
- '334', '752', '821', '776', '784', '781', '778', '222', '971', '542')
+-- products = 
+-- ('281', '764', '874', '782', '759', '333', '728',
+--  '334', '752', '821', '776', '784', '781', '778', '222', '971', '542')
+--     and product in ('281', '764', '874', '782', '759', '333', '728',
+--      '334', '752', '821', '776', '784', '781', '778', '222', '971', '542')
 
-    and products in ('281', '764', '874', '782', '759', '333', '728',
-     '334', '752', '821', '776', '784', '781', '778', '222', '971', '542')
+/* 3.3. create table top_ex_imp_2016 */
+create table top_ex_imp_2016 as
+select year, product, product_label, economy_label, partner_label, flow, KUSD
+from baci_xaa
+where
+    year = 2016
+    and product in ('764')
+union all
+select year, product, product_label, economy_label, partner_label, flow, KUSD
+from baci_xab
+where
+    year = 2016
+    and product in ('764')
+;
+
 /* 3.3. create table top_ex_imp_2017 */
 create table top_ex_imp_2017 as
 select year, product, product_label, economy_label, partner_label, flow, KUSD
 from baci_xaa
 where
     year = 2017
-    and products in ('281', '764', '874', '782', '759', '333', '728',
+    and product in ('281', '764', '874', '782', '759', '333', '728',
      '334', '752', '821', '776', '784', '781', '778', '222', '971', '542')
 union all
 select year, product, product_label, economy_label, partner_label, flow, KUSD
 from baci_xab
 where
     year = 2017
-    and products in ('281', '764', '874', '782', '759', '333', '728',
+    and product in ('281', '764', '874', '782', '759', '333', '728',
      '334', '752', '821', '776', '784', '781', '778', '222', '971', '542')
 ;
 
@@ -28,7 +43,7 @@ select year, product, product_label, economy_label, partner_label, flow, KUSD
 from baci_xab
 where
     year = 2018
-    and products in ('281', '764', '874', '782', '759', '333', '728',
+    and product in ('281', '764', '874', '782', '759', '333', '728',
      '334', '752', '821', '776', '784', '781', '778', '222', '971', '542')
 ;
 
@@ -38,14 +53,14 @@ select year, product, product_label, economy_label, partner_label, flow, KUSD
 from baci_xab
 where
     year = 2019
-    and products in ('281', '764', '874', '782', '759', '333', '728',
+    and product in ('281', '764', '874', '782', '759', '333', '728',
      '334', '752', '821', '776', '784', '781', '778', '222', '971', '542')
 union all
 select year, product, product_label, economy_label, partner_label, flow, KUSD
 from baci_xac
 where
     year = 2019
-    and products in ('281', '764', '874', '782', '759', '333', '728',
+    and product in ('281', '764', '874', '782', '759', '333', '728',
      '334', '752', '821', '776', '784', '781', '778', '222', '971', '542')
 ;
 
@@ -54,33 +69,30 @@ select year, product, product_label, economy_label, partner_label, flow, KUSD
 from baci_xac
 where
     year = 2020
-    and products in ('281', '764', '874', '782', '759', '333', '728',
+    and product in ('281', '764', '874', '782', '759', '333', '728',
      '334', '752', '821', '776', '784', '781', '778', '222', '971', '542')
 union all
 select year, product, product_label, economy_label, partner_label, flow, KUSD
 from baci_xad
 where
     year = 2020
-    and products in ('281', '764', '874', '782', '759', '333', '728',
+    and product in ('281', '764', '874', '782', '759', '333', '728',
      '334', '752', '821', '776', '784', '781', '778', '222', '971', '542')
 ;
-alter table product_2020
-add column year int first;
-update product_2020 set year = 2020;
 
 create table top_ex_imp_2021 as
 select year, product, product_label, economy_label, partner_label, flow, KUSD
 from baci_xad
 where
     year = 2021
-    and products in ('281', '764', '874', '782', '759', '333', '728',
+    and product in ('281', '764', '874', '782', '759', '333', '728',
      '334', '752', '821', '776', '784', '781', '778', '222', '971', '542')
 union all
 select year, product, product_label, economy_label, partner_label, flow, KUSD
 from baci_xae
 where
     year = 2021
-    and products in ('281', '764', '874', '782', '759', '333', '728',
+    and product in ('281', '764', '874', '782', '759', '333', '728',
      '334', '752', '821', '776', '784', '781', '778', '222', '971', '542')
 ;
 
