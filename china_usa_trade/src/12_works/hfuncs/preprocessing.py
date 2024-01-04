@@ -11,33 +11,6 @@ from warnings import filterwarnings
 filterwarnings('ignore')
 
 
-def scale_weights(
-    G_sub,
-    scaler=5.0,
-    ):
-    ncountries = len(G_sub.nodes())
-    weights_dict = \
-        nx.get_edge_attributes(G_sub,'weight')
-    edges = list(weights_dict.keys())
-    weights = np.fromiter(weights_dict.values(), dtype=float)
-    sum_weights = weights.sum()
-    weights = weights*(scaler*ncountries/sum_weights)
-    weights_dict = dict(zip(edges, weights))
-    return weights_dict
-
-def log_log_log_scaler(weight):
-    return np.log(np.log(np.log(weight + 1.0) + 1.0) + 1.0)
-
-def log_scale_weights(G):
-    tmp_G = G.copy()
-    weights_dict = \
-        nx.get_edge_attributes(tmp_G, 'weight')
-    log_weights = \
-        {edge: log_log_log_scaler(weight) \
-            for edge, weight in weights_dict.items()}
-    nx.set_edge_attributes(tmp_G, log_weights, 'weight')
-    return tmp_G
-
 # BASIC PREPROCESSING
 def replace_0(string):
     try:
@@ -77,7 +50,7 @@ def get_countries(
         data_root + 'countries.csv'
         )
     countries = country_df.Name.values
-    countries = np.append(countries, ["United States of America", "China, Hong Kong SAR", "China, Taiwan Province of", "Türkiye", "Iran (Islamic Republic of)", "Czechia", "Switzerland, Liechtenstein", "China, Macao SAR", "Korea, Dem. People's Rep. of", "Venezuela (Bolivarian Rep. of)", "Côte d'Ivoire", "Congo, Dem. Rep. of the", "Lao People's Dem. Rep.", "Bolivia (Plurinational State of)", "North Macedonia", "Curaçao", "State of Palestine", "Cabo Verde", "Eswatini", "British Virgin Islands", "Micronesia (Federated States of)", "Wallis and Futuna Islands", "Holy See",])
+    # countries = np.append(countries, ["United States of America", "China, Hong Kong SAR", "China, Taiwan Province of", "Türkiye", "Iran (Islamic Republic of)", "Czechia", "Switzerland, Liechtenstein", "China, Macao SAR", "Korea, Dem. People's Rep. of", "Venezuela (Bolivarian Rep. of)", "Côte d'Ivoire", "Congo, Dem. Rep. of the", "Lao People's Dem. Rep.", "Bolivia (Plurinational State of)", "North Macedonia", "Curaçao", "State of Palestine", "Cabo Verde", "Eswatini", "British Virgin Islands", "Micronesia (Federated States of)", "Wallis and Futuna Islands", "Holy See",])
     return countries
 
 
@@ -129,32 +102,41 @@ def get_product_data(
     return products
 
 # FOR GETTING NETWORK
-def create_network(year, product_name, product_df):
+def create_network(year, product_name, product_df, label_columns=['economy_label', 'partner_label']):
+    economy_label = label_columns[0]
+    partner_label = label_columns[1]
     filter_product = \
         (product_df['product']==product_name).values
     filter_year = \
         (product_df['year']==year).values 
     product_df_cp = product_df[filter_product & filter_year]\
         [[
-            'economy_label',
-            'partner_label',
+            economy_label,
+            partner_label,
+            'flow',
             'KUSD'
         ]].copy()
     # create network
     G = nx.DiGraph()
-    export_nodes = list(product_df_cp.economy_label.unique())
-    import_nodes = list(product_df_cp.partner_label.unique())
-    G.add_nodes_from(export_nodes, node_type='export')
-    G.add_nodes_from(import_nodes, node_type='import')
+    economy_nodes = list(product_df_cp[economy_label].unique())
+    partner_nodes = list(product_df_cp[partner_label].unique())
+    G.add_nodes_from(economy_nodes, node_type='export')
+    G.add_nodes_from(partner_nodes, node_type='import')
 
     for index, row in product_df_cp.iterrows():
-        exporter = row['economy_label']
-        importer = row['partner_label']
+        flow = row['flow']
+        if flow == 1: # import
+            exporter = row[partner_label]
+            importer = row[economy_label]
+        elif flow == 2: # export
+            exporter = row[economy_label]
+            importer = row[partner_label]
         kusd = row['KUSD']
         G.add_edge(exporter, importer, weight=kusd)
 
     return G
 
+# FOR EDA
 def degree_eigen_centrality(
         G,  # product network
         product_name,
@@ -162,8 +144,6 @@ def degree_eigen_centrality(
         product_df,
         degree_type='out'
     ):
-    
-
     # compute degree centrality of China
     if degree_type=='out':
         dc = nx.out_degree_centrality(G)
@@ -192,7 +172,7 @@ def degree_eigen_centrality(
     
     return country_dc, country_ec
 
-
+# FOR GETTING MOST TRADED PRODUCTS
 def aggregate_products(products):
     aggregated = products.groupby(
         ['year', 'economy_label', 'product', 'product_label']
@@ -212,3 +192,45 @@ def top_products(aggregated, country, year, n=5):
         country_top5[country_top5['year']==year]\
         ['product_label'].values
     return country_top5_year_product_codes, country_top5_year_product_labels
+
+# SCALE WEIGHTS OF NETWORK FOR PLOTTING
+def scale_weights(
+    G_sub,
+    scaler=5.0,
+    ):
+    ncountries = len(G_sub.nodes())
+    weights_dict = \
+        nx.get_edge_attributes(G_sub,'weight')
+    edges = list(weights_dict.keys())
+    weights = np.fromiter(weights_dict.values(), dtype=float)
+    sum_weights = weights.sum()
+    weights = weights*(scaler*ncountries/sum_weights)
+    weights_dict = dict(zip(edges, weights))
+    return weights_dict
+
+def log_log_log_scaler(weight):
+    return np.log(np.log(np.log(weight + 1.0) + 1.0) + 1.0)
+
+def log_scale_weights(G):
+    tmp_G = G.copy()
+    weights_dict = \
+        nx.get_edge_attributes(tmp_G, 'weight')
+    log_weights = \
+        {edge: log_log_log_scaler(weight) \
+            for edge, weight in weights_dict.items()}
+    nx.set_edge_attributes(tmp_G, log_weights, 'weight')
+    return tmp_G
+
+# # %%
+# def log_weight_scaler(weight):
+#     return np.log(np.log(np.log(weight + 1.0) + 1.0) + 1.0)
+
+# def log_scale_weights(G):
+#     tmp_G = G.copy()
+#     weights_dict = \
+#         nx.get_edge_attributes(tmp_G, 'weight')
+#     log_weights = \
+#         {edge: log_weight_scaler(weight) \
+#             for edge, weight in weights_dict.items()}
+#     nx.set_edge_attributes(tmp_G, log_weights, 'weight')
+#     return tmp_G

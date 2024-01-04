@@ -14,6 +14,7 @@ filterwarnings('ignore')
 from hfuncs.preprocessing import *
 from hfuncs.plotting import *
 from hfuncs.graphs import *
+from hfuncs.plotting_communities import *
 
 # %%
 # # load data
@@ -30,349 +31,138 @@ products = get_product_data(
     data_file_name=data_file_name,
 )
 countries = get_countries(data_root=data_root)
+country_df = pd.read_csv(data_root + 'countries.csv')
+
+# %%
+products_economy_labeled = products.merge(
+    country_df,
+    left_on='economy_label',
+    right_on='Name',
+    how='left')
+products_labeled = products_economy_labeled.merge(
+    country_df,
+    left_on='partner_label',
+    right_on='Name',
+    how='left',
+    suffixes=('_economy', '_partner'))
+products = products_labeled.copy()
+del(products_economy_labeled)
+del(products_labeled)
+# %%
 products = products[products['Level']==3]
-products = products[products['economy_label'].isin(countries)]
-products = products[products['partner_label'].isin(countries)]
+products = products.dropna(subset=['Code_economy', 'Code_partner'])
 products = products[products['partner_label'] != products['economy_label']]
+# products = products[products['flow']==2]
 
 # %%
-# limiting exports to 764's exports
-# that are larger than 1e5k(100million) USD
-tele_product_code = '764'
-tele_products = products[products['product']==tele_product_code]
-tele_product_label = \
-    tele_products['product_label'].values[0]
+def get_filter(products, product_code='764', year=2017, flow=False, percentile=0.9):
+    year_filter = products['year'] == year
+    product_filter = products['product'] == product_code
+    if flow:
+        flow_filter = products['flow'] == flow
+        all_filters = flow_filter & year_filter & product_filter
+    else:
+        all_filters = year_filter & product_filter
+    tmp_kusd = products[all_filters]['KUSD'].copy()
+    tmp_kusd = tmp_kusd.values
+    tmp_kusd = np.sort(tmp_kusd)[::-1]
+    cumulative = np.cumsum(tmp_kusd)
+    index = np.argmax(cumulative > percentile*np.sum(tmp_kusd))
+    kusd_filter = tmp_kusd[index]
+    return kusd_filter
 
-kusd_filter = 1e5
-print(tele_products[tele_products['KUSD']>=kusd_filter]['KUSD'].sum()\
-    /tele_products['KUSD'].sum())
-
-tele_products = tele_products[tele_products['KUSD']>=kusd_filter]
-tele_products = tele_products[tele_products['flow']==2]
+# %% [markdown]
+# # Plotting communities over years
 # %%
-year1 = 2017
-year2 = 2018
-year3 = 2019
-kusd_filter = 1e5
-tele_products = tele_products[['year', 'product', 'economy_label', 'partner_label', 'KUSD']]
-
-tele_sub_G_17 = create_network(
-    year1,
-    tele_product_code,
-    product_df=tele_products)
-tele_sub_G_17 = filter_edges(tele_sub_G_17, min_kusd=kusd_filter)
-
-tele_sub_G_18 = create_network(
-    year2,
-    tele_product_code,
-    product_df=tele_products)
-tele_sub_G_18 = filter_edges(tele_sub_G_18, min_kusd=kusd_filter)
-
-tele_sub_G_19 = create_network(
-    year2,
-    tele_product_code,
-    product_df=tele_products)
-tele_sub_G_19 = filter_edges(tele_sub_G_19, min_kusd=kusd_filter)
-
-# %%
-def log_weight_scaler(weight):
-    return np.log(np.log(np.log(weight + 1.0) + 1.0) + 1.0)
-
-def log_scale_weights(G):
-    tmp_G = G.copy()
-    weights_dict = \
-        nx.get_edge_attributes(tmp_G, 'weight')
-    log_weights = \
-        {edge: log_weight_scaler(weight) \
-            for edge, weight in weights_dict.items()}
-    nx.set_edge_attributes(tmp_G, log_weights, 'weight')
-    return tmp_G
-tele_sub_G_17 = log_scale_weights(tele_sub_G_17)
-tmp_weights = \
-    nx.get_edge_attributes(tele_sub_G_17, 'weight')
-fig = px.histogram(list(tmp_weights.values()))
-fig.show()
-
-# %%
-def community_layout(g, partition):
-    """
-    Compute the layout for a modular graph.
-    Arguments:
-    ----------
-    g -- networkx.Graph or networkx.DiGraph instance
-        graph to plot
-    partition -- dict mapping int node -> int community
-        graph partitions
-    Returns:
-    --------
-    pos -- dict mapping int node -> (float x, float y)
-        node positions
-    """
-    # partition is dict of form: {ni: ci, ...}
-    pos_communities_nodes, pos_communities, hypergraph = \
-        _position_communities(g, partition, scale=4.)
-
-    pos_nodes = _position_nodes(g, partition, scale=1., k=0.9)
-
-    # COMBINE POSITIONS!!!!!
-    pos = dict()
-    for node in g.nodes():
-        pos[node] = pos_communities_nodes[node] + pos_nodes[node]
-
-    return pos
-
-def _position_communities(g, partition, **kwargs):
-    # CREATE A WEIGHTED GRAPH, IN WHICH EACH NODE CORRESPONDS TO A COMMUNITY,
-    # AND EACH EDGE WEIGHT TO THE NUMBER OF EDGES BETWEEN COMMUNITIES
-
-    # returns dict of form: {(ci, cj): [(ni, nj), ...], ...}
-    between_community_edges = _find_between_community_edges(g, partition)
-
-    communities = set(partition.values())
-    hypergraph = nx.DiGraph()
-    hypergraph.add_nodes_from(communities)
-    # below is the key component of this function
-    for (ci, cj), edges in between_community_edges.items():
-        hypergraph.add_edge(ci, cj, weight=len(edges))
-
-    # find layout for communities
-    pos_communities = nx.spring_layout(hypergraph, **kwargs)
-
-    # set node positions to position of community
-    pos = dict()
-    for node, community in partition.items():
-        pos[node] = pos_communities[community]
-
-    return pos, pos_communities, hypergraph
-
-# just returns nodes that are between communities
-def _find_between_community_edges(g, partition):
-    edges = dict()
-    for (ni, nj) in g.edges():
-        ci = partition[ni]
-        cj = partition[nj]
-        if ci != cj:
-            try:
-                edges[(ci, cj)] += [(ni, nj)]
-            except KeyError:
-                edges[(ci, cj)] = [(ni, nj)]
-    return edges
-
-# positions nodes within communities.
-def _position_nodes(g, partition, **kwargs):
-    communities = dict()
-    for node, community in partition.items():
-        try:
-            communities[community] += [node]
-        except KeyError:
-            communities[community] = [node]
-
-    pos = dict()
-    for ci, nodes in communities.items():
-        subgraph = g.subgraph(nodes)
-        pos_subgraph = nx.spring_layout(subgraph, **kwargs)
-        pos.update(pos_subgraph)
-
-    return pos
-
-# for each node, get the community it belongs to
-def get_community_partition(sub_G):
-    communities = nx.community.greedy_modularity_communities(sub_G)
-    communities = list(communities)
-    partition = dict()
-    for i, community in enumerate(communities):
-        for country in community:
-            partition[country] = i
-    return partition
-
-# %%
-def plot_communities(sub_G, partition, pos, figsize=(8, 8)):
-    fig, ax = plt.subplots(figsize=figsize)
-    # position = nx.circular_layout(sub_G, scale=2.5)
-    weights_dict = \
-        scale_weights(sub_G, scaler=1.0)
-    weights = \
-        np.fromiter(weights_dict.values(), dtype=float)
-    log_weights = \
-        1/4*np.log(weights+1.0)
-
-    communities = set(partition.values())
-    cmap = plt.get_cmap('Set1')
-    colors = \
-        [cmap(i) for i in np.linspace(0.2, 0.7, len(communities))]
-    for i, community in enumerate(communities):
-        sub_G_tmp = sub_G.subgraph(
-            [node for node in sub_G.nodes() if partition[node]==community])
-        nx.draw_networkx_nodes(
-            sub_G_tmp,
-            pos=pos,
-            node_color=colors[i],
-            ax=ax,)
-    nx.draw_networkx_labels(
-        sub_G,
-        labels=dict(zip(sub_G.nodes(), sub_G.nodes())),
-        pos=pos,
-        font_size=11,
-        ax=ax,)
-    nx.draw_networkx_edges(
-        sub_G, pos,
-        edgelist=sub_G.edges(),
-        width=log_weights,
-        connectionstyle="arc3,rad=0.1",
-        ax=ax,)
-    # plt.show()
-    return fig, ax
-
-# %%
-# FIGSIZE = (14, 14) # for Interactive
-FIGSIZE = (7, 7) # for Term
-# %%
-year = 2017
-tele_sub_G_tmp = create_network(
-    year,
-    tele_product_code,
-    product_df=tele_products)
-tele_sub_G_tmp = filter_edges(tele_sub_G_tmp, min_kusd=kusd_filter)
-
-sub_G = tele_sub_G_tmp.copy()
-# sub_G.remove_node('Latvia')
-# sub_G.remove_node('Lithuania')
-partition = get_community_partition(sub_G)
-pos = community_layout(sub_G, partition)
-fig, ax = plot_communities(sub_G, partition, pos, figsize=FIGSIZE)
-plt.title(f'{year} {tele_product_code} Trade Network')
-plt.show()
-
-year = 2018
-tele_sub_G_tmp = create_network(
-    year,
-    tele_product_code,
-    product_df=tele_products)
-tele_sub_G_tmp = filter_edges(tele_sub_G_tmp, min_kusd=kusd_filter)
-
-sub_G = tele_sub_G_tmp.copy()
-# sub_G.remove_node('Latvia')
-# sub_G.remove_node('Lithuania')
-partition = get_community_partition(sub_G)
-pos = community_layout(sub_G, partition)
-fig, ax = plot_communities(sub_G, partition, pos, figsize=FIGSIZE)
-plt.title(f'{year} {tele_product_code} Trade Network')
-plt.show()
-
-year = 2019
-tele_sub_G_tmp = create_network(
-    year,
-    tele_product_code,
-    product_df=tele_products)
-tele_sub_G_tmp = filter_edges(tele_sub_G_tmp, min_kusd=kusd_filter)
-
-sub_G = tele_sub_G_tmp.copy()
-# sub_G.remove_node('Latvia')
-# sub_G.remove_node('Lithuania')
-partition = get_community_partition(sub_G)
-pos = community_layout(sub_G, partition)
-fig, ax = plot_communities(sub_G, partition, pos, figsize=FIGSIZE)
-plt.title(f'{year} {tele_product_code} Trade Network')
-plt.show()
-
-year = 2020
-tele_sub_G_tmp = create_network(
-    year,
-    tele_product_code,
-    product_df=tele_products)
-tele_sub_G_tmp = filter_edges(tele_sub_G_tmp, min_kusd=kusd_filter)
-
-sub_G = tele_sub_G_tmp.copy()
-# sub_G.remove_node('Latvia')
-# sub_G.remove_node('Lithuania')
-partition = get_community_partition(sub_G)
-pos = community_layout(sub_G, partition)
-fig, ax = plot_communities(sub_G, partition, pos, figsize=FIGSIZE)
-plt.title(f'{year} {tele_product_code} Trade Network')
-plt.show()
-
-year = 2021
-tele_sub_G_tmp = create_network(
-    year,
-    tele_product_code,
-    product_df=tele_products)
-tele_sub_G_tmp = filter_edges(tele_sub_G_tmp, min_kusd=kusd_filter)
-
-sub_G = tele_sub_G_tmp.copy()
-# sub_G.remove_node('Latvia')
-# sub_G.remove_node('Lithuania')
-partition = get_community_partition(sub_G)
-pos = community_layout(sub_G, partition)
-fig, ax = plot_communities(sub_G, partition, pos, figsize=FIGSIZE)
-plt.title(f'{year} {tele_product_code} Trade Network')
-plt.show()
-
-# %%
-def plot_hist(year, product_code, sub_G):
-    tmp_weights = \
-        nx.get_edge_attributes(sub_G, 'weight')
-    fig = px.histogram(list(tmp_weights.values()))
-    fig.update_layout(
-        title=f'{year} {product_code} Trade Network',
-    )
-    fig.show()
-# %%
-FIGSIZE = (14, 14)
-years = (2017, 2019)
-product_code = '764'
-product_df = products
-kusd_filter = 1e5
-
-for year in years:
-    tmp_G = create_network(
-        year,
-        product_code,
-        product_df=product_df.copy())
-    tmp_G = filter_edges(tmp_G, min_kusd=kusd_filter)
-    tmp_G = log_scale_weights(tmp_G)
-
-    partition = get_community_partition(tmp_G)
-    pos = community_layout(tmp_G, partition)
-    fig, ax = plot_communities(tmp_G, partition, pos, figsize=FIGSIZE)
-
-    plt.title(f"{year} product:{product_code}", fontsize=25)
-    plt.show()
-
-# %%
-def plot_communities_years(
-        years,
-        product_code,
-        product_df,
-        kusd_filter=1e5,
-        figsize=(8, 8)):
-    for year in years:
-        tmp_G = create_network(
-            year,
-            product_code,
-            product_df=product_df.copy())
-        tmp_G = filter_edges(tmp_G, min_kusd=kusd_filter)
-        tmp_G = log_scale_weights(tmp_G)
-
-        partition = get_community_partition(tmp_G)
-        pos = community_layout(tmp_G, partition)
-        fig, ax = plot_communities(tmp_G, partition, pos, figsize=figsize)
-
-        plt.title(f"{year} product:{product_code}", fontsize=25)
-        plt.show()
-# %%
-FIGSIZE = (14, 14)
-KUSD_FILTER = 1e5
-YEARS = (2017, 2019)
+FLOW = 1 # 1: imports, 2: exports
+FIGSIZE = (21, 21)
+KUSD_FILTER = \
+    get_filter(
+        products, product_code='764',
+        year=2017, flow=FLOW, percentile=0.9)
+print('kusd_filter: ', KUSD_FILTER)
+YEARS = (2017, 2019, 2021)
 PRODUCTS = [
     '764', # Telecommunication equipment, n.e.s. & parts, ...
-    '776', # Cathode valves & tubes(semiconductors)
-    '778', # Electrical machinery & apparatus, n.e.s.
+    # '776', # Cathode valves & tubes(semiconductors)
+    # '778', # Electrical machinery & apparatus, n.e.s.
 ]
-# Telecommunication equipment, n.e.s. & parts, ...
 for product in PRODUCTS:
     plot_communities_years(
-        YEARS,
-        product, # product_code
-        products, # DataFrame
+        years=YEARS,
+        product_code=product,
+        product_df=products[products['flow']==FLOW],
+        # product_df=products,
         kusd_filter=KUSD_FILTER,
-        figsize=FIGSIZE)
+        figsize=FIGSIZE,
+        label_columns=['Code_economy', 'Code_partner']
+        # label_columns=['economy_label', 'partner_label']
+        )
+
+# %% [markdown]
+# # Plotting top partners over years
+# %% [markdown]
+# ## Get top partners over years
+# %%
+def get_top_partners_over_years(
+        product_df,
+        YEARS,
+        PRODUCT_CODE,
+        ECONOMY,
+        FLOW,
+        N):
+    product_filter = product_df['product']==PRODUCT_CODE
+    economy_filter = product_df['economy_label']==ECONOMY
+    flow_filter = product_df['flow']==FLOW
+    years_filter = product_df['year'].isin(YEARS)
+    all_filters = \
+        product_filter & economy_filter & flow_filter & years_filter
+    product_df = product_df[all_filters]
+    product_df = product_df.sort_values(['year', 'KUSD'],
+                        ascending=[True, False])
+    country_top5_partners = \
+        product_df.groupby('year').head(N).reset_index()
+    top5_partners_over_years = country_top5_partners.partner_label.unique()
+    return top5_partners_over_years
+
+# %% [markdown]
+# ## Plot top partners over years
+# %%
+# EXPORTERS = [ "China", "Korea, Republic of", "Viet Nam", "China, Taiwan Province of", "Japan", "India", ]
+plot_top_partners = False
+if plot_top_partners:
+    YEARS = (2017, 2018, 2019, 2021)
+    PRODUCT_CODE = '764'
+    ECONOMY = "United States of America"
+    # ECONOMY = "China"
+    FLOW = 1
+    N = 5
+    product_df = products.copy()
+    for product in PRODUCTS:
+        top_partners = get_top_partners_over_years(
+            product_df=products,
+            YEARS=YEARS,
+            PRODUCT_CODE=product,
+            ECONOMY=ECONOMY,
+            FLOW=FLOW,
+            N=5)
+        product_filter = products['product']==product
+        flow_filter = products['flow']==FLOW
+        importer_filter = products['economy_label']==ECONOMY
+
+        exporter_filter = products['partner_label'].isin(top_partners)
+        all_filters = product_filter & importer_filter & exporter_filter & flow_filter
+
+        tmp_products = products[all_filters].copy()
+        tmp_products['year'] = tmp_products['year'].astype(str)
+        fig = px.line(
+            tmp_products,
+            x='year',
+            y='KUSD',
+            color='partner_label',
+            title=f'{product} Trade',
+            markers=True,
+            )
+        fig.show()
+
+# %%
