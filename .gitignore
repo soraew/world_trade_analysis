@@ -7,4 +7,5 @@ src/11_works/hfuncs/__pycache__/
 11_works/hfuncs/__pycache__/
 hfuncs/__pycache__/
 __pycache__/
+*.csv
 *.pyc
