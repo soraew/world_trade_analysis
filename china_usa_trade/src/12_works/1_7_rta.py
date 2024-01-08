@@ -53,7 +53,6 @@ products = products_labeled.copy()
 del(products_economy_labeled)
 del(products_labeled)
 # %%
-# products = products[products['Level']==3]
 products = products.dropna(subset=['Code_economy', 'Code_partner']) # limit to countries
 products = products[products['partner_label'] != products['economy_label']]
 
@@ -65,19 +64,56 @@ rta = pd.read_csv(csvs_root + 'AllRTAs_new.csv')
 # %%
 rta['date_of_sign_G'] = \
     pd.to_datetime(rta['Date of Signature (G)'], format='%d-%b-%y', errors='coerce')
+rta['date_of_sign_S'] = \
+    pd.to_datetime(rta['Date of Signature (S)'], format='%d-%b-%y', errors='coerce')
 rta['inactive_date'] = \
     pd.to_datetime(rta['Inactive Date'], format='%d-%b-%y', errors='coerce')
 
 def minus_100y(date):
-    if date.year > 2021:
+    if date.year > 2023:
         return date - pd.offsets.DateOffset(years=100)
     else:
         return date
-rta['date_of_sign_G'] = rta['date_of_sign_G'].apply(
-    lambda x: minus_100y(x))
-rta[rta['date_of_sign_G'] < pd.to_datetime('2016-01-01')]
 
+rta['date_of_sign_G'] = rta['date_of_sign_G'].apply(lambda x: minus_100y(x))
+rta['date_of_sign_S'] = rta['date_of_sign_S'].apply(lambda x: minus_100y(x))
+rta['inactive_date'] = rta['inactive_date'].apply(lambda x: minus_100y(x))
 
+sign_pre_2016_filter = (rta['date_of_sign_G'] < pd.to_datetime('2016-01-01')).values
+# %% [markdown]
+# 2016-2019の間にinactiveになったRTAは、
+# id: 502, Turkiye-Jordan FTAのみ
+# よってこれ以外のRTA(inactive post 2019) を加えたRTA郡を対象にする
+# %%
+inactive_between_2016_2019_filter = \
+    (rta['inactive_date'] > pd.to_datetime('2016-01-01')).values & \
+    (rta['inactive_date'] < pd.to_datetime('2020-01-01')).values # 2016-19の間にinactive
+inactive_post_2019_filter = \
+    (rta['inactive_date'] >= pd.to_datetime('2020-01-01')).values # 2016年以降にinactive
+
+post_2019_add_filter = ~inactive_between_2016_2019_filter & inactive_post_2019_filter
+
+currently_active_filter = (rta['Status'] == 'In Force').values
+use_filter = post_2019_add_filter | currently_active_filter
+
+rta[use_filter]
+# %% [markdown]
+# やること：(1/9)
+# 1. 2016-2019の間にEntry/ExitがあったRTAを抽出
+#   1. 2016, 2017, 2018, 2019のそれぞれの年について、変化を反映させたRTAシートを作る
+# 2. RTAの国をCodeに変換
+# 3. RTAのネットワークを作る
+# %%
+
+has_exits_post_2016_filter = (rta['Specific Entry/Exit dates'].notna()).values
+# tmp_rta = rta[sign_pre_2016_filter & active_post_2016_filter]
+# tmp_rta = rta[inactive_post_2016_filter]
+
+rta_lean = tmp_rta[['RTA ID', 'RTA Name', 'Status', 'date_of_sign_G', 'inactive_date',
+           'Original signatories', 'Current signatories', 'Specific Entry/Exit dates', 'Coverage',
+           'Type'
+           ]]
+rta_lean
 
 # %%
 G = nx.Graph()
