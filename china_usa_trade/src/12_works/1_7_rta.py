@@ -53,39 +53,31 @@ products = products_labeled.copy()
 del(products_economy_labeled)
 del(products_labeled)
 # %%
-products = products[products['Level']==3]
+# products = products[products['Level']==3]
 products = products.dropna(subset=['Code_economy', 'Code_partner']) # limit to countries
 products = products[products['partner_label'] != products['economy_label']]
-# %% 
-# preventing namibia(NA) from being nan
-# by default, there are no nans in other columns
-geos = pd.read_csv(csvs_root + 'geo_cepii.csv', keep_default_na=False)
-geos.head()
-# %%
-# get distance between countries
-dist_df = pd.DataFrame(columns=['economy', 'partner', 'dist'])
-exclude_sets = []
-for economy in geos.iso2:
-    for partner in geos.iso2:
-        if economy == partner or set([economy, partner]) in exclude_sets:
-            continue
-        exclude_sets.append(set([economy, partner]))
-        dist = geodesic(
-            geos[geos.iso2==economy][['lat', 'lon']].values[0],
-            geos[geos.iso2==partner][['lat', 'lon']].values[0]
-        ).km
-        dist_df = dist_df.append(
-            {
-                'economy': economy,
-                'partner': partner,
-                'dist': dist
-            },
-            ignore_index=True
-        )
 
 # %%
-dist_df_inv = dist_df.copy()
-dist_df_inv['dist_inv'] = dist_df_inv['dist'].apply(lambda x: 1/x)
+rta = pd.read_csv(csvs_root + 'AllRTAs_new.csv')
+
+# %% [markdown]
+# ## convert date columns in RTA to datetime
+# %%
+rta['date_of_sign_G'] = \
+    pd.to_datetime(rta['Date of Signature (G)'], format='%d-%b-%y', errors='coerce')
+rta['inactive_date'] = \
+    pd.to_datetime(rta['Inactive Date'], format='%d-%b-%y', errors='coerce')
+
+def minus_100y(date):
+    if date.year > 2021:
+        return date - pd.offsets.DateOffset(years=100)
+    else:
+        return date
+rta['date_of_sign_G'] = rta['date_of_sign_G'].apply(
+    lambda x: minus_100y(x))
+rta[rta['date_of_sign_G'] < pd.to_datetime('2016-01-01')]
+
+
 
 # %%
 G = nx.Graph()
