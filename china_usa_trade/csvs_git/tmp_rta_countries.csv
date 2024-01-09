@@ -14,7 +14,7 @@ Australia,Australia,AU
 Austria,Austria,AT
 Azerbaijan,Azerbaijan,AZ
 Bahamas,Bahamas,BS
-"Bahrain, Kingdom of",,
+"Bahrain, Kingdom of",Bahrain,BH
 Bangladesh,Bangladesh,BD
 Barbados,Barbados,BB
 Belarus,Belarus,BY
@@ -23,7 +23,7 @@ Belize,Belize,BZ
 Benin,Benin,BJ
 Bermuda,Bermuda,BM
 Bhutan,Bhutan,BT
-"Bolivia, Plurinational State of",,
+"Bolivia, Plurinational State of",Bolivia (Plurinational State of),BO
 Bosnia and Herzegovina,Bosnia and Herzegovina,BA
 Botswana,Botswana,BW
 Brazil,Brazil,BR
@@ -43,7 +43,7 @@ Central American Common Market (CACM),,
 Chad,Chad,TD
 Chile,Chile,CL
 China,China,CN
-Chinese Taipei,,
+Chinese Taipei,"China, Taiwan Province of",TW
 Colombia,Colombia,CO
 Comoros,Comoros,KM
 Congo,Congo,CG
@@ -54,7 +54,7 @@ Cuba,Cuba,CU
 Cyprus,Cyprus,CY
 Czech Republic,,
 Côte d'Ivoire,Côte d'Ivoire,CI
-Democratic Republic of the Congo,,
+Democratic Republic of the Congo,"Congo, Dem. Rep. of the",CD
 Denmark,Denmark,DK
 Djibouti,Djibouti,DJ
 Dominica,Dominica,DM
@@ -71,7 +71,7 @@ Eurasian Economic Union (EAEU),,
 European Free Trade Association (EFTA),,
 European Union,,
 Faeroe Islands,,
-Falkland Islands (Islas Malvinas),,
+Falkland Islands (Islas Malvinas),Falkland Islands (Malvinas),FK
 Fiji,Fiji,FJ
 Finland,Finland,FI
 France,France,FR
@@ -91,12 +91,12 @@ Gulf Cooperation Council (GCC),,
 Guyana,Guyana,GY
 Haiti,Haiti,HT
 Honduras,Honduras,HN
-"Hong Kong, China",,
+"Hong Kong, China","China, Hong Kong SAR",HK
 Hungary,Hungary,HU
 Iceland,Iceland,IS
 India,India,IN
 Indonesia,Indonesia,ID
-Iran,,
+Iran,Iran (Islamic Republic of),IR
 Iraq,Iraq,IQ
 Ireland,Ireland,IE
 Israel,Israel,IL
@@ -107,13 +107,13 @@ Jordan,Jordan,JO
 Kazakhstan,Kazakhstan,KZ
 Kenya,Kenya,KE
 Kiribati,Kiribati,KI
-"Korea, Democratic People's Republic of",,
+"Korea, Democratic People's Republic of","Korea, Dem. People's Rep. of",KP
 "Korea, Republic of","Korea, Republic of",KR
-"Kuwait, the State of",,
-Kyrgyz Republic,,
-Lao People's Democratic Republic,,
+"Kuwait, the State of",Kuwait,KW
+Kyrgyz Republic,Kyrgyzstan,KG
+Lao People's Democratic Republic,Lao People's Dem. Rep.,LA
 Latvia,Latvia,LV
-Lebanese Republic,,
+Lebanese Republic,Lebanon,LB
 Lesotho,Lesotho,LS
 Liberia,Liberia,LR
 Libya,Libya,LY
@@ -130,7 +130,7 @@ Malta,Malta,MT
 Marshall Islands,Marshall Islands,MH
 Mauritius,Mauritius,MU
 Mexico,Mexico,MX
-"Micronesia, Federated States of",,
+"Micronesia, Federated States of",Micronesia (Federated States of),FM
 "Moldova, Republic of","Moldova, Republic of",MD
 Mongolia,Mongolia,MN
 Montenegro,Montenegro,ME
@@ -153,7 +153,7 @@ North Macedonia,,
 Norway,Norway,NO
 Oman,Oman,OM
 Pakistan,Pakistan,PK
-Palestine,,
+Palestine,State of Palestine,PS
 Panama,Panama,PA
 Papua New Guinea,Papua New Guinea,PG
 Paraguay,Paraguay,PY
@@ -172,13 +172,13 @@ Saint Pierre and Miquelon,Saint Pierre and Miquelon,PM
 Saint Vincent and the Grenadines,Saint Vincent and the Grenadines,VC
 Samoa,Samoa,WS
 San Marino,,
-"Saudi Arabia, Kingdom of",,
+"Saudi Arabia, Kingdom of",Saudi Arabia,SA
 Senegal,Senegal,SN
 Serbia,Serbia,RS
 Seychelles,Seychelles,SC
 Sierra Leone,Sierra Leone,SL
 Singapore,Singapore,SG
-Slovak Republic,,
+Slovak Republic,Slovakia,SK
 Slovenia,Slovenia,SI
 Solomon Islands,Solomon Islands,SB
 Somalia,Somalia,SO
@@ -191,12 +191,12 @@ Sri Lanka,Sri Lanka,LK
 Sudan,Sudan,SD
 Suriname,Suriname,SR
 Sweden,Sweden,SE
-Switzerland,,
+Switzerland,"Switzerland, Liechtenstein",CH
 Syrian Arab Republic,Syrian Arab Republic,SY
 Tajikistan,Tajikistan,TJ
-Tanzania,,
+Tanzania,"Tanzania, United Republic of",TZ
 Thailand,Thailand,TH
-The Gambia,,
+The Gambia,Gambia,GM
 Togo,Togo,TG
 Tonga,Tonga,TO
 Trinidad and Tobago,Trinidad and Tobago,TT
@@ -214,46 +214,26 @@ United States of America,United States of America,US
 Uruguay,Uruguay,UY
 Uzbekistan,Uzbekistan,UZ
 Vanuatu,Vanuatu,VU
-"Venezuela, Bolivarian Republic of",,
+"Venezuela, Bolivarian Republic of",Venezuela (Bolivarian Rep. of),VE
 Viet Nam,Viet Nam,VN
-"Virgin Islands, British",,
+"Virgin Islands, British",British Virgin Islands,VG
 Wallis and Futuna Islands,Wallis and Futuna Islands,WF
 Yemen,Yemen,YE
 Zambia,Zambia,ZM
 Zimbabwe,Zimbabwe,ZW
-,American Samoa,AS
-,Bahrain,BH
-,Bolivia (Plurinational State of),BO
-,British Virgin Islands,VG
-,"China, Taiwan Province of",TW
-,"Congo, Dem. Rep. of the",CD
-,Faroe Islands,FO
-,Falkland Islands (Malvinas),FK
-,Gambia,GM
-,State of Palestine,PS
-,Gibraltar,GI
-,Guam,GU
-,"China, Hong Kong SAR",HK
-,Iran (Islamic Republic of),IR
-,"Korea, Dem. People's Rep. of",KP
-,Kuwait,KW
-,Kyrgyzstan,KG
-,Lao People's Dem. Rep.,LA
-,Lebanon,LB
-,"China, Macao SAR",MO
-,Mauritania,MR
-/* ,Aruba,AW */
-,Sint Maarten (Dutch part),SX
-,"Bonaire, Sint Eustatius and Saba",BQ
-,Northern Mariana Islands,MP
-,Micronesia (Federated States of),FM
-,Palau,PW
-,Timor-Leste,TL
-,Sao Tome and Principe,ST
-,Saudi Arabia,SA
-,Slovakia,SK
-,South Sudan,SS
-,"Switzerland, Liechtenstein",CH
-,Tokelau,TK
-,"Tanzania, United Republic of",TZ
-,Venezuela (Bolivarian Rep. of),VE
+
+
+/*DOESN'T EXIST IN RTA*/
+/* ,Tokelau,TK */
+/* ,Sint Maarten (Dutch part),SX */
+/* ,South Sudan,SS */
+/* ,Sao Tome and Principe,ST */
+/* ,Timor-Leste,TL */
+/* ,Palau,PW */
+/* ,Northern Mariana Islands,MP */
+/* ,"Bonaire, Sint Eustatius and Saba",BQ */
+/* ,Mauritania,MR */
+/* ,Guam,GU */
+/* ,Gibraltar,GI */
+/* ,Faroe Islands,FO */
+/* ,American Samoa,AS */
