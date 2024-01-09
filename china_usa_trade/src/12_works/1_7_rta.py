@@ -96,12 +96,60 @@ post_2019_add_filter = ~inactive_between_2016_2019_filter & inactive_post_2019_f
 currently_active_filter = (rta['Status'] == 'In Force').values
 use_filter = post_2019_add_filter | currently_active_filter
 
-rta[use_filter]
+tmp_rta = rta[use_filter]
+tmp_rta = tmp_rta[['RTA ID', 'RTA Name', 'Status', 'date_of_sign_G', 'inactive_date',
+           'Original signatories', 'Current signatories', 'Specific Entry/Exit dates', 'Coverage',
+           'Type'
+           ]]
+has_exits_post_2016_filter = (tmp_rta['Specific Entry/Exit dates'].notna()).values
+def has_years_in_string(string):
+    if string is np.nan:
+        return string
+    elif '2016' in string or '2017' in string or '2018' in string or '2019' in string:
+        return True
+    else:
+        return False
+
+changed_in_range = tmp_rta[has_exits_post_2016_filter]['Specific Entry/Exit dates']\
+    .apply(lambda x: has_years_in_string(x))
+tmp_rta[has_exits_post_2016_filter][changed_in_range.values].shape
+
+# %%
+# write rta countries to csv file
+countries = set()
+for index, row in tmp_rta.iterrows():
+    if row['Current signatories'] is np.nan:
+        lis = row['Original signatories'].split(';')
+        lis = [x.strip() for x in lis]
+        countries = countries.union(set(lis))
+        continue
+    else:
+        lis = row['Current signatories'].split(';')
+        lis = [x.strip() for x in lis]
+        countries = countries.union(set(lis))
+countries_df = pd.DataFrame(list(countries), columns=['RTA_country'])
+tmp_country_codes = products[['economy_label', 'Code_economy']].drop_duplicates()
+
+countries_df = countries_df.merge(
+    tmp_country_codes,
+    left_on='RTA_country',
+    right_on='economy_label',
+    how='outer'
+)
+countries_df.sort_values(by='RTA_country', inplace=True)
+countries_df.to_csv(csvs_root + 'tmp_rta_countries.csv', index=False)
+countries_df
+
+
 # %% [markdown]
 # やること：(1/9)
 # 1. 2016-2019の間にEntry/ExitがあったRTAを抽出
-#   1. 2016, 2017, 2018, 2019のそれぞれの年について、変化を反映させたRTAシートを作る
+#   1. ID: 994, 640, 953, 692, 469, 759, 897, 681, 901
+#   2. 2016, 2017, 2018, 2019のそれぞれの年について、変化を反映させたRTAシートを作る
 # 2. RTAの国をCodeに変換
+#   1. RTAの国のリストを作る
+#       1. to_csv
+#   2. RTAの国のリストをCodeに変換
 # 3. RTAのネットワークを作る
 # %%
 
@@ -109,11 +157,6 @@ has_exits_post_2016_filter = (rta['Specific Entry/Exit dates'].notna()).values
 # tmp_rta = rta[sign_pre_2016_filter & active_post_2016_filter]
 # tmp_rta = rta[inactive_post_2016_filter]
 
-rta_lean = tmp_rta[['RTA ID', 'RTA Name', 'Status', 'date_of_sign_G', 'inactive_date',
-           'Original signatories', 'Current signatories', 'Specific Entry/Exit dates', 'Coverage',
-           'Type'
-           ]]
-rta_lean
 
 # %%
 G = nx.Graph()
