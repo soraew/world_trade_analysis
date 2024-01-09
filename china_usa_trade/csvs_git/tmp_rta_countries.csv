@@ -1,5 +1,4 @@
 RTA_country,economy_label,Code_economy
-ASEAN Free Trade Area (AFTA),,
 Afghanistan,Afghanistan,AF
 Albania,Albania,AL
 Algeria,Algeria,DZ
@@ -27,19 +26,15 @@ Bhutan,Bhutan,BT
 Bosnia and Herzegovina,Bosnia and Herzegovina,BA
 Botswana,Botswana,BW
 Brazil,Brazil,BR
-British Indian Ocean Territory,,
-"British Overseas Territory of Saint Helena, Ascension and Tristan da Cunha",,
 Brunei Darussalam,Brunei Darussalam,BN
 Bulgaria,Bulgaria,BG
 Burkina Faso,Burkina Faso,BF
 Burundi,Burundi,BI
-Cabo Verde,,
 Cambodia,Cambodia,KH
 Cameroon,Cameroon,CM
 Canada,Canada,CA
 Cayman Islands,Cayman Islands,KY
 Central African Republic,Central African Republic,CF
-Central American Common Market (CACM),,
 Chad,Chad,TD
 Chile,Chile,CL
 China,China,CN
@@ -52,7 +47,6 @@ Costa Rica,Costa Rica,CR
 Croatia,Croatia,HR
 Cuba,Cuba,CU
 Cyprus,Cyprus,CY
-Czech Republic,,
 Côte d'Ivoire,Côte d'Ivoire,CI
 Democratic Republic of the Congo,"Congo, Dem. Rep. of the",CD
 Denmark,Denmark,DK
@@ -65,18 +59,12 @@ El Salvador,El Salvador,SV
 Equatorial Guinea,Equatorial Guinea,GQ
 Eritrea,Eritrea,ER
 Estonia,Estonia,EE
-Eswatini,,
 Ethiopia,Ethiopia,ET
-Eurasian Economic Union (EAEU),,
-European Free Trade Association (EFTA),,
-European Union,,
-Faeroe Islands,,
 Falkland Islands (Islas Malvinas),Falkland Islands (Malvinas),FK
 Fiji,Fiji,FJ
 Finland,Finland,FI
 France,France,FR
 French Polynesia,French Polynesia,PF
-French Southern Territories,,
 Gabon,Gabon,GA
 Georgia,Georgia,GE
 Germany,Germany,DE
@@ -138,18 +126,15 @@ Montserrat,Montserrat,MS
 Morocco,Morocco,MA
 Mozambique,Mozambique,MZ
 Myanmar,Myanmar,MM
-Namibia,,
 Nauru,Nauru,NR
 Nepal,Nepal,NP
 Netherlands,Netherlands,NL
-Netherlands Antilles,,
 New Caledonia,New Caledonia,NC
 New Zealand,New Zealand,NZ
 Nicaragua,Nicaragua,NI
 Niger,Niger,NE
 Nigeria,Nigeria,NG
 Niue,Niue,NU
-North Macedonia,,
 Norway,Norway,NO
 Oman,Oman,OM
 Pakistan,Pakistan,PK
@@ -159,7 +144,6 @@ Papua New Guinea,Papua New Guinea,PG
 Paraguay,Paraguay,PY
 Peru,Peru,PE
 Philippines,Philippines,PH
-Pitcairn,,
 Poland,Poland,PL
 Portugal,Portugal,PT
 Qatar,Qatar,QA
@@ -171,7 +155,6 @@ Saint Lucia,Saint Lucia,LC
 Saint Pierre and Miquelon,Saint Pierre and Miquelon,PM
 Saint Vincent and the Grenadines,Saint Vincent and the Grenadines,VC
 Samoa,Samoa,WS
-San Marino,,
 "Saudi Arabia, Kingdom of",Saudi Arabia,SA
 Senegal,Senegal,SN
 Serbia,Serbia,RS
@@ -183,9 +166,6 @@ Slovenia,Slovenia,SI
 Solomon Islands,Solomon Islands,SB
 Somalia,Somalia,SO
 South Africa,South Africa,ZA
-South Georgia and the South Sandwich Islands,,
-Southern African Customs Union (SACU),,
-Southern Common Market (MERCOSUR),,
 Spain,Spain,ES
 Sri Lanka,Sri Lanka,LK
 Sudan,Sudan,SD
@@ -205,7 +185,6 @@ Turkmenistan,Turkmenistan,TM
 Turks and Caicos Islands,Turks and Caicos Islands,TC
 Tuvalu,Tuvalu,TV
 Türkiye,Türkiye,TR
-UNMIK/Kosovo,,
 Uganda,Uganda,UG
 Ukraine,Ukraine,UA
 United Arab Emirates,United Arab Emirates,AE
@@ -221,19 +200,3 @@ Wallis and Futuna Islands,Wallis and Futuna Islands,WF
 Yemen,Yemen,YE
 Zambia,Zambia,ZM
 Zimbabwe,Zimbabwe,ZW
-
-
-/*DOESN'T EXIST IN RTA*/
-/* ,Tokelau,TK */
-/* ,Sint Maarten (Dutch part),SX */
-/* ,South Sudan,SS */
-/* ,Sao Tome and Principe,ST */
-/* ,Timor-Leste,TL */
-/* ,Palau,PW */
-/* ,Northern Mariana Islands,MP */
-/* ,"Bonaire, Sint Eustatius and Saba",BQ */
-/* ,Mauritania,MR */
-/* ,Guam,GU */
-/* ,Gibraltar,GI */
-/* ,Faroe Islands,FO */
-/* ,American Samoa,AS */

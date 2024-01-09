@@ -16,6 +16,8 @@ import pickle as pkl
 from warnings import filterwarnings
 filterwarnings('ignore')
 
+from thefuzz import fuzz
+
 from hfuncs.preprocessing import *
 from hfuncs.plotting import *
 from hfuncs.graphs import *
@@ -139,6 +141,43 @@ countries_df = countries_df.merge(
 countries_df.sort_values(by='RTA_country', inplace=True)
 countries_df.to_csv(csvs_root + 'tmp_rta_countries.csv', index=False)
 countries_df
+
+# %%
+# あぶれているものをfuzzで検索
+def find_fuzz(rta_df, country, column='RTA Name'):
+    fuzz_scores = rta_df[column].apply(lambda x: fuzz.partial_ratio(x, country))
+    return rta_df[fuzz_scores > 80]
+# ASEAN(AFTA) ID : 1170
+find_fuzz(tmp_rta, 'ASEAN Free Trade Area')
+# SACU ID : 7
+find_fuzz(tmp_rta, 'Southern African Customs Union')
+# Southern Common Market ID : 130
+find_fuzz(tmp_rta, 'Southern Common Market')
+# Central American Common Market ID : 151
+find_fuzz(tmp_rta, 'Central American Common Market')
+# Eurasian Economic Union ID : 909
+find_fuzz(tmp_rta, 'Eurasian Economic Union')
+# European Free Trade Association ID : 152
+find_fuzz(tmp_rta, 'European Free Trade Association')
+# Gulf Cooperation Council ID : 17
+find_fuzz(tmp_rta, 'Gulf Cooperation Council')
+# European Union ID : NONE
+find_fuzz(tmp_rta, 'European Union', 'Current signatories')
+# %% [markdown]
+# ## get country names in EU
+# %%
+# ## 1. replace names not in baci with tmp_rta[rta_id][Current signatories] + EU's country names string
+# ## 2. map above string to country codes
+# ## 3. create list of country codes, NMI with product network
+
+# tmp_RTA_ids = [1170, 7, 130, 151, 909, 152, 17]
+# tmp_dict = {}
+# for rta_id in tmp_RTA_ids:
+#     countries_str = tmp_rta[tmp_rta['RTA ID'] == rta_id]['Current signatories'].values[0]
+#     print(countries_str)
+
+
+
 
 
 # %% [markdown]
