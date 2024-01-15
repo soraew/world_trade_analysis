@@ -88,27 +88,71 @@ dist_df_inv = dist_df.copy()
 dist_df_inv['dist_inv'] = dist_df_inv['dist'].apply(lambda x: 1/x)
 
 # %%
-G = nx.Graph()
+dist_G = nx.Graph()
 economy_nodes = list(dist_df_inv['economy'].unique())
 partner_nodes = list(dist_df_inv['partner'].unique())
-G.add_nodes_from(economy_nodes, node_type='export')
-G.add_nodes_from(partner_nodes, node_type='import')
+dist_G.add_nodes_from(economy_nodes, node_type='export')
+dist_G.add_nodes_from(partner_nodes, node_type='import')
 for index, row in dist_df_inv.iterrows():
     exporter = row['economy']
     importer = row['partner']
     dist_inv = row['dist_inv']
-    G.add_edge(exporter, importer, weight=dist_inv)
+    dist_G.add_edge(exporter, importer, weight=dist_inv)
 
-# G = nx.Graph()
-# economy_nodes = list(dist_df['economy'].unique())
-# partner_nodes = list(dist_df['partner'].unique())
-# G.add_nodes_from(economy_nodes, node_type='export')
-# G.add_nodes_from(partner_nodes, node_type='import')
-# for index, row in dist_df.iterrows():
-#     exporter = row['economy']
-#     importer = row['partner']
-#     dist = row['dist']
-#     G.add_edge(exporter, importer, weight=dist)
+dist_communities = \
+    nx.community.louvain_communities(dist_G)
+dist_communities = list(dist_communities)
+partition = dict()
+for i, community in enumerate(dist_communities):
+    for country in community:
+        partition[country] = i
+dist_communities = set(partition.values())
+
+weights = np.array(list(nx.get_edge_attributes(dist_G, 'weight').values()))
+# %%
+tmp_weights = weights.copy()
+tmp_weights = tmp_weights / tmp_weights.min() + 1.
+tmp_weights = np.log(tmp_weights)/10
+fig = px.histogram(tmp_weights)
+fig.show()
+# %%
+# PLOT
+G = dist_G.copy()
+figsize = (14, 14)
+fig, ax = plt.subplots(figsize=figsize)
+# position = nx.circular_layout(sub_G, scale=2.5)
+cmap = plt.get_cmap('Set1')
+communities = set(partition.values())
+colors = \
+    [cmap(i) for i in np.linspace(0.2, 0.7, len(communities))]
+# weights = np.array(list(nx.get_edge_attributes(G, 'weight').values()))
+nx.set_edge_attributes(G, dict(zip(G.edges(), tmp_weights)), 'weight')
+position = nx.spring_layout(G, k=0.9, iterations=500, weight='weight')
+for i, community in enumerate(communities):
+    nodes = [node for node in G.nodes() if partition[node]==community]
+    # print(nodes)
+    G_tmp = G.subgraph(
+        nodes=nodes)
+    nx.draw_networkx_nodes(
+        G_tmp,
+        pos=position,
+        node_color=colors[i],
+        ax=ax,)
+nx.draw_networkx_labels(
+    G,
+    labels=dict(zip(G.nodes(), G.nodes())),
+    pos=position,
+    font_size=11,
+    ax=ax,)
+nx.draw_networkx_edges(
+    G, position,
+    edgelist=G.edges(),
+    width=weights*100,
+    edge_color='grey',
+    ax=ax)
+plt.show()
+
+
 # %%
 def plot_undirected_network(G, position, weights, figsize):
     fig, ax = plt.subplots(figsize=figsize)
@@ -188,7 +232,7 @@ def plot_communities_new(
     return fig, ax
 
 # %%
-tmp_G = G.copy()
+tmp_G = dist_G.copy()
 figsize = (14, 14)
 position = nx.spring_layout(tmp_G)
 select_countries = list(tmp_G.nodes())
