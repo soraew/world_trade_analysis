@@ -36,46 +36,6 @@ data_root= '../../../../data/trade/BACI/'
 data_file_name='top_ex_imp_2017_21_new.csv'
 
 # %%
-# load and preprocess product data
-def preprocess_products(
-        exports=True,
-        imports=True,
-        csvs_root=csvs_root,
-        data_root=data_root,
-        data_file_name=data_file_name,
-        ):
-    products = get_product_data(
-        exports=exports,
-        imports=imports,
-        csvs_root=csvs_root,
-        data_root=data_root,
-        data_file_name=data_file_name,
-    )
-    countries = get_countries(data_root=data_root)
-    country_df = pd.read_csv(data_root + 'countries.csv')
-    products_economy_labeled = products.merge(
-        country_df,
-        left_on='economy_label',
-        right_on='Name',
-        how='left')
-    products_labeled = products_economy_labeled.merge(
-        country_df,
-        left_on='partner_label',
-        right_on='Name',
-        how='left',
-        suffixes=('_economy', '_partner'))
-    products = products_labeled.copy()
-    return products, country_df
-products, country_df = preprocess_products(
-    exports=True,
-    imports=True,
-    csvs_root=csvs_root,
-    data_root=data_root,
-    data_file_name=data_file_name,)
-products = products.dropna(subset=['Code_economy', 'Code_partner']) # limit to countries
-products = products[products['partner_label'] != products['economy_label']]
-
-# %%
 # funtions for RTA
 def minus_100y(date):
     if date.year > 2023:
@@ -113,25 +73,6 @@ def replace_abbv_with_country(string, rta_dict):
     for key, value in rta_dict.items():
         string = string.replace(key, value)
     return string
-# 1/11 TODO: SOMEHOW ONLY REPLACING EU
-# UPDATE 1/15: THIS WILL NOT BE USED
-def did_replace_abbv_with_country(string, abbv_rta_dict):
-    if string is np.nan:
-        return string, string
-    abbvs_1 = ''
-    abbvs_2 = ''
-    count = 0
-    for key, value in abbv_rta_dict.items():
-        if key in string:
-            if count == 0:
-                abbvs_1 += key
-            elif count == 1:
-                abbvs_2 += key
-            count += 1
-    if count > 0:
-        return abbvs_1, abbvs_2
-    else:
-        return np.nan
         
 def replace_abbvs_with_countries(
         tmp_rta,
@@ -190,46 +131,12 @@ tmp_rta = preprocess_rta(rta)
 EU_countries_str = 'Austria; Belgium; Cyprus; Czech Republic; Denmark; Estonia; Finland; France; Germany; Greece; Hungary; Ireland; Italy; Latvia; Lithuania; Luxembourg; Malta; Netherlands; Poland; Portugal; Slovak Republic; Slovenia; Spain; Sweden; United Kingdom'
 abbv_RTA_ids = [1170, 7, 130, 151, 909, 152, 17]
 abbv_rta_dict = abbv_to_countries_dict(EU_countries_str, abbv_RTA_ids)
-# %% # UPDATE 1/15: BELOW WILL NOT BE USED
-# create dict with 'ABBV' : NCountries
-abbv_N_dict = dict()
-for key, value in abbv_rta_dict.items():
-    abbv_N_dict[key] = len(value.split(';'))
-def tuple_to_Ns(abbv_tuple, abbv_N_dict):
-    N_tuple = tuple()
-    if abbv_tuple is np.nan:
-        return abbv_tuple
-    for key in abbv_tuple:
-        if key != '' and key is not np.nan:
-            N_tuple += (abbv_N_dict[key],)
-        elif key == '':
-            N_tuple += (0,)
-    return N_tuple
-# %% # UPDATE 1/15: BELOW WILL NOT BE USED
-# DEBUGGING BELOW
-test_ids = [437, 676]
-test_rta = tmp_rta[tmp_rta['RTA ID'].isin(test_ids)].copy()
-test_rta_new = test_rta.copy()
-test_rta_new['Current signatories'] = test_rta['Current signatories'].\
-    apply(lambda string: replace_abbv_with_country(string, abbv_rta_dict))
-test_rta_new['abbv_replaced'] = test_rta['Current signatories'].\
-    apply(lambda string: did_replace_abbv_with_country(string, abbv_rta_dict))
-test_rta_new = replace_abbvs_with_countries(test_rta)
-# test_rta_new['abbv_replaced'].apply(lambda tuple: tuple_to_Ns(tuple, abbv_N_dict))
-test_rta_new['abbv_Ns'] = \
-    test_rta_new['abbv_replaced'].apply(lambda tuple: tuple_to_Ns(tuple, abbv_N_dict))
 # %%
 # convert RTA/ABVVs to countries
 tmp_rta_new = tmp_rta.copy()
 tmp_rta_new['Current signatories'] = tmp_rta['Current signatories'].\
     apply(lambda string: replace_abbv_with_country(string, abbv_rta_dict))
-# UPDATE 1/15: BELOW WILL NOT BE USED
-# tmp_rta_new['abbv_replaced'] = tmp_rta['Current signatories'].\
-#     apply(lambda string: did_replace_abbv_with_country(string, abbv_rta_dict))
 tmp_rta_new = replace_abbvs_with_countries(tmp_rta)
-# UPDATE 1/15: BELOW WILL NOT BE USED
-# tmp_rta_new['abbv_Ns'] =\
-#     tmp_rta_new['abbv_replaced'].apply(lambda tuple: tuple_to_Ns(tuple, abbv_N_dict))
 # %%
 # get all RTAs in country codes
 rta_to_country_codes = pd.read_csv(git_csvs_root + 'rta_to_country_codes.csv')
@@ -292,7 +199,6 @@ for RTA_id in all_RTA_ids:
 # 1/12TODOS:
     # 1. 2016-19末 の間にin-forceになったRTAを考慮する 
         # 30個くらいある
-    # 2. EU/abbvRTAと他の国とのリンクを作るときは、そのRTAの国数分の1の重みを持つedgeにする ->1/15 UPDATE: なし
 G_rta = nx.Graph()
 economy_nodes = rta_country_codes
 G_rta.add_nodes_from(economy_nodes)
@@ -351,6 +257,45 @@ if plot_rta:
     plt.show()
 
 # %%
+# %%
+# load and preprocess product data
+def preprocess_products(
+        exports=True,
+        imports=True,
+        csvs_root=csvs_root,
+        data_root=data_root,
+        data_file_name=data_file_name,
+        ):
+    products = get_product_data(
+        exports=exports,
+        imports=imports,
+        csvs_root=csvs_root,
+        data_root=data_root,
+        data_file_name=data_file_name,
+    )
+    countries = get_countries(data_root=data_root)
+    country_df = pd.read_csv(data_root + 'countries.csv')
+    products_economy_labeled = products.merge(
+        country_df,
+        left_on='economy_label',
+        right_on='Name',
+        how='left')
+    products_labeled = products_economy_labeled.merge(
+        country_df,
+        left_on='partner_label',
+        right_on='Name',
+        how='left',
+        suffixes=('_economy', '_partner'))
+    products = products_labeled.copy()
+    return products, country_df
+products, country_df = preprocess_products(
+    exports=True,
+    imports=True,
+    csvs_root=csvs_root,
+    data_root=data_root,
+    data_file_name=data_file_name,)
+products = products.dropna(subset=['Code_economy', 'Code_partner']) # limit to countries
+products = products[products['partner_label'] != products['economy_label']]
 # create product network
 product_G = create_network(
     2019,
