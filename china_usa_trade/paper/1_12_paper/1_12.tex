@@ -1,0 +1,88 @@
+\documentclass[a4paper, 12pt]{article}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{enumerate}
+\usepackage{graphicx}
+% layout params
+% \setlength{\topmargin}{-1mm}
+% \setlength{\headheight}{0mm}
+% \setlength{\headsep}{0mm}
+% \setlength{\oddsidemargin}{2mm}
+% \setlength{\evensidemargin}{2mm}
+% \setlength{\textheight}{244mm}
+% \setlength{\textwidth}{160mm}
+% \setlength{\footskip}{16mm}
+% subsectionまで節番号をつける（subsubsection には番号を付けない）
+\setcounter{secnumdepth}{2}
+
+% 節番号のスタイルを 1.1, 1.2, 2.1 といった形に設定する
+\renewcommand{\thesection}{\arabic{section}}
+\renewcommand{\thesubsection}{\arabic{section}.\arabic{subsection}}
+
+
+\title{米中貿易戦争とその後の貿易パターンのネットワーク分析}
+\author{ウォード 空}
+\date{\today}
+
+\begin{document}
+
+% Title Page
+\maketitle
+\newpage
+
+% Introduction (second page)
+\section*{Abstract}
+The US-China trade war since 2018 has had a major impact on the world economy. 
+However, most research on this topic has focused on the magnitude of the effect
+and not much on it's characteristic and how the relationship between countries
+has changed.
+I employ a complex network approach for the timeframe 2017-2019 to study the 
+change in characteristic of the world trade network of one of the product 
+categories (Telecommunication equipment) that had the most impact due to 
+tariffs in the early years of the trade war.
+I find that the communities in the world trade network has followed a pattern 
+similar to the communities in the world RTA network.
+Suggesting that in times of shock, the way in which countries connect to each 
+other differ from when there aren't major shocks in the network.
+I also show that the relationship between countries within the same community 
+has changed, mainly the rise in Vietnam's network power.
+\newpage
+
+% Table of Contents (third page)
+\tableofcontents
+\newpage
+
+% Rest of the document
+\section{TODO}
+\subsection{1/12}
+\subsubsection{Divide links between EU/abbvRTAs and others with their RTA size}
+\subsubsection{Create RTA for each year 2017-19}
+\subsubsection{Recompute NMI for each year}
+\subsubsection{Compare NMI(prod, tot), NMI(prod, dist), NMI(prod, rta)
+for each year}
+
+
+
+
+\section{Introduction}
+Prior research on your topic.
+
+\section{Data and Methods}
+Data: BACI trade data from CEPII.\\
+date range: 2017-2019\\
+Methods: Network analysis, centrality measures, etc.\\
+\subsection{Data}
+\subsection{Community detection}
+\subsection{Network centrality}
+
+\section{Networks}
+\subsection{Product Network}
+\subsection{RTA Network}
+\subsection{Military Alliancce Network}
+
+\section{Results}
+
+
+% Add more sections or content as needed
+
+\end{document}

@@ -8,5 +8,14 @@ src/11_works/hfuncs/__pycache__/
 hfuncs/__pycache__/
 __pycache__/
 csvs/
-# .csv
 *.pyc
+
+# latex generated files other than tex, pdf, and bib
+*.aux
+*.dvi
+*.fdb_labexmk
+*.fls
+*.log
+*.synctex.gz
+*.toc
+
