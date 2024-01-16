@@ -83,8 +83,6 @@ def replace_abbvs_with_countries(
     tmp_rta_new = tmp_rta.copy()
     tmp_rta_new['Current signatories'] = tmp_rta['Current signatories'].\
         apply(lambda string: replace_abbv_with_country(string, abbv_rta_dict))
-    tmp_rta_new['abbv_replaced'] = tmp_rta['Current signatories'].\
-        apply(lambda string: did_replace_abbv_with_country(string, abbv_rta_dict))
     # breakpoint()
     return tmp_rta_new
 
@@ -162,38 +160,6 @@ for RTA_id in all_RTA_ids:
         tmp_df_codes = tmp_df['Code_economy'].values.tolist()
         country_codes_per_RTA.append(tmp_df_codes)
         rta_country_codes = rta_country_codes.union(set(tmp_df_codes))
-
-        # # add new countries as nodes to G
-        # new_nodes = rta_country_codes - set(tmp_df_codes)
-        # new_nodes = list(new_nodes)
-        # G_rta.add_nodes_from(new_nodes)
-
-        # TODO:
-        # 1. abbv_1_countries -> codes
-        # 2. abbv_3_countreis -> codes
-        # 3. 1/N for abbv_1_countries <-> abbv_2_countries/(countries not in abbv_1_countries)
-        # 4. 1 for nodes in abbv_1_countries other_nodes in abbv_1_countries
-        # abbv_replaced = tmp_row['abbv_replaced']
-        # abbv_1 = abbv_replaced[0]
-        # abbv_2 = abbv_replaced[1]
-        # abbv_1_countries = [abbv_1]
-
-        # abbv_2_countries = abbv_to_countries_dict[abbv_2]
-        # if code_list[i] in abbv_1_countries and code_list[j] not in abbv_2_countries:
-        #     edge_weight_denom = abbv_N_dict[code_list[i]]
-        #     edge_weight = 1/edge_weight_denom
-        # if tmp_row['abbv_replaced'] is not np.nan:
-        #     abbv_1 = tmp_row['abbv_replaced'][0]
-        #     abbv_2 = tmp_row['abbv_replaced'][1]
-
-        # for code_list in country_codes_per_RTA:
-        #     for i in range(len(code_list)):
-        #         for j in range(i+1, len(code_list)):
-        #             if set((code_list[i], code_list[j])) in edges_set:
-        #                 continue
-        #             else: # add edge
-        #                 G_rta.add_edge(code_list[i], code_list[j])
-        #                 edges_set.append(set((code_list[i], code_list[j])))
 # %% 
 # create RTA network
 # 1/12TODOS:
@@ -396,19 +362,21 @@ print(f'NMI(product, dist) = {product_v_dist}')
 # %%
 # what are the friends of a country in each network?
 country = 'US'
-dist_country_community = dist_partition[country]
-dist_country_friends = \
-    [code for code in dist_partition.keys() if \
-        dist_partition[code] == dist_country_community]
-rta_country_community = rta_partition[country]
-rta_country_friends = \
-    [code for code in rta_partition.keys() if \
-        rta_partition[code] == rta_country_community]
-product_country_community = product_partition[country]
-product_country_friends = \
-    [code for code in product_partition.keys() if \
-        product_partition[code] == product_country_community]
-print(f'{country} product friends: {product_country_friends}')
-print(f'{country} rta friends: {rta_country_friends}')
-print(f'{country} dist friends: {dist_country_friends}')
+country = False
+if country:
+    dist_country_community = dist_partition[country]
+    dist_country_friends = \
+        [code for code in dist_partition.keys() if \
+            dist_partition[code] == dist_country_community]
+    rta_country_community = rta_partition[country]
+    rta_country_friends = \
+        [code for code in rta_partition.keys() if \
+            rta_partition[code] == rta_country_community]
+    product_country_community = product_partition[country]
+    product_country_friends = \
+        [code for code in product_partition.keys() if \
+            product_partition[code] == product_country_community]
+    print(f'{country} product friends: {product_country_friends}')
+    print(f'{country} rta friends: {rta_country_friends}')
+    print(f'{country} dist friends: {dist_country_friends}')
 
