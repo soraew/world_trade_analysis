@@ -234,3 +234,32 @@ def log_scale_weights(G):
 #             for edge, weight in weights_dict.items()}
 #     nx.set_edge_attributes(tmp_G, log_weights, 'weight')
 #     return tmp_G
+
+def preprocess_products(
+        exports=True,
+        imports=True,
+        csvs_root='../../csvs/',
+        data_root='../../../../data/trade/BACI/',
+        data_file_name='top_ex_imp_2017_21_new.csv',
+        ):
+    products = get_product_data(
+        exports=exports,
+        imports=imports,
+        csvs_root=csvs_root,
+        data_root=data_root,
+        data_file_name=data_file_name,
+    )
+    country_df = pd.read_csv(data_root + 'countries.csv')
+    products_economy_labeled = products.merge(
+        country_df,
+        left_on='economy_label',
+        right_on='Name',
+        how='left')
+    products_labeled = products_economy_labeled.merge(
+        country_df,
+        left_on='partner_label',
+        right_on='Name',
+        how='left',
+        suffixes=('_economy', '_partner'))
+    products = products_labeled.copy()
+    return products, country_df
