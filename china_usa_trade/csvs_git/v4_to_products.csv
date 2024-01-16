@@ -2,10 +2,10 @@ state_name,economy_label,Code_economy
 United Kingdom,United Kingdom,GB
 Portugal,Portugal,PT
 Ecuador,Ecuador,EC
-Bolivia,,
+Bolivia,Bolivia (Plurinational State of),BO
 Paraguay,Paraguay,PY
 Colombia,Colombia,CO
-Venezuela,,
+Venezuela,Venezuela (Bolivarian Rep. of),VE
 Mauritania,Mauritania,MR
 Somalia,Somalia,SO
 Djibouti,Djibouti,DJ
@@ -16,13 +16,11 @@ Libya,Libya,LY
 Sudan,Sudan,SD
 Iraq,Iraq,IQ
 Egypt,Egypt,EG
-Syria,,
+Syria,Syrian Arab Republic,SY
 Lebanon,Lebanon,LB
 Jordan,Jordan,JO
 Saudi Arabia,Saudi Arabia,SA
-Yemen Arab Republic,,
 Yemen,Yemen,YE
-Yemen People's Republic,,
 Kuwait,Kuwait,KW
 Bahrain,Bahrain,BH
 Qatar,Qatar,QA
@@ -39,10 +37,10 @@ Trinidad and Tobago,Trinidad and Tobago,TT
 Barbados,Barbados,BB
 Dominica,Dominica,DM
 Grenada,Grenada,GD
-St. Lucia,,
-St. Vincent and the Grenadines,,
-Antigua & Barbuda,,
-St. Kitts and Nevis,,
+St. Lucia,Saint Lucia,LC
+St. Vincent and the Grenadines,Saint Vincent and the Grenadines,VC
+Antigua & Barbuda,Antigua and Barbuda,AG
+St. Kitts and Nevis,Saint Kitts and Nevis,KN
 Mexico,Mexico,MX
 Belize,Belize,BZ
 Guatemala,Guatemala,GT
@@ -63,52 +61,51 @@ Belgium,Belgium,BE
 Luxembourg,Luxembourg,LU
 France,France,FR
 Spain,Spain,ES
-German Federal Republic,,
 Italy,Italy,IT
 Greece,Greece,GR
 Germany,Germany,DE
 Poland,Poland,PL
 Hungary,Hungary,HU
-Czech Republic,,
+Czech Republic,, Czech Republic,CZ
 Norway,Norway,NO
 Denmark,Denmark,DK
 Iceland,Iceland,IS
-Turkey,,
+Turkey,, Türkiye,TR
 Philippines,Philippines,PH
 Australia,Australia,AU
 New Zealand,New Zealand,NZ
 Japan,Japan,JP
-South Korea,,
+South Korea,, "Korea, Republic of",KR
 Pakistan,Pakistan,PK
 Liberia,Liberia,LR
 Gabon,Gabon,GA
 China,China,CN
-North Korea,,
+North Korea,, "Korea, Dem. People's Rep. of",KP
 Kenya,Kenya,KE
 Ethiopia,Ethiopia,ET
 India,India,IN
 Guinea,Guinea,GN
-Cape Verde,,
+Cape Verde,, Cape Verde,CV
 Guinea-Bissau,Guinea-Bissau,GW
 Gambia,Gambia,GM
 Mali,Mali,ML
 Senegal,Senegal,SN
 Benin,Benin,BJ
 Niger,Niger,NE
-Ivory Coast,,
+Ivory Coast,, Côte d'Ivoire,CI
 Burkina Faso,Burkina Faso,BF
 Sierra Leone,Sierra Leone,SL
 Ghana,Ghana,GH
 Togo,Togo,TG
 Nigeria,Nigeria,NG
 South Africa,South Africa,ZA
-Swaziland,,
-Russia,,
+Swaziland,, Swaziland,SZ
+Russia,, Russian Federation,RU
 Romania,Romania,RO
 Bulgaria,Bulgaria,BG
 Ukraine,Ukraine,UA
 Finland,Finland,FI
-Moldova,,
+Moldova,, "Moldova, Republic of",MD
 Belarus,Belarus,BY
 Armenia,Armenia,AM
 Georgia,Georgia,GE
@@ -126,11 +123,10 @@ Mongolia,Mongolia,MN
 Lithuania,Lithuania,LT
 Croatia,Croatia,HR
 Israel,Israel,IL
-Yugoslavia,,
 Bosnia and Herzegovina,Bosnia and Herzegovina,BA
 Central African Republic,Central African Republic,CF
 Congo,Congo,CG
-Democratic Republic of the Congo,,
+Democratic Republic of the Congo,, "Congo, Dem. Rep. of the",CD
 Sao Tome and Principe,Sao Tome and Principe,ST
 Equatorial Guinea,Equatorial Guinea,GQ
 Cameroon,Cameroon,CM
@@ -139,98 +135,14 @@ Burundi,Burundi,BI
 Rwanda,Rwanda,RW
 Angola,Angola,AO
 Eritrea,Eritrea,ER
-Iran,,
+Iran,, Iran (Islamic Republic of),IR
 Afghanistan,Afghanistan,AF
 Uganda,Uganda,UG
-Tanzania,,
+Tanzania,, "Tanzania, United Republic of",TZ
 Zambia,Zambia,ZM
-,American Samoa,AS
-,Andorra,AD
-,Antigua and Barbuda,AG
-,Austria,AT
-,Bangladesh,BD
-,Bermuda,BM
-,Bhutan,BT
-,Bolivia (Plurinational State of),BO
-,Botswana,BW
-,Solomon Islands,SB
-,British Virgin Islands,VG
-,Brunei Darussalam,BN
-,Myanmar,MM
-,Cambodia,KH
-,Cayman Islands,KY
-,Sri Lanka,LK
-,"China, Taiwan Province of",TW
-,Comoros,KM
-,"Congo, Dem. Rep. of the",CD
-,Cook Islands,CK
-,Cyprus,CY
-,Faroe Islands,FO
-,Falkland Islands (Malvinas),FK
-,Fiji,FJ
-,French Polynesia,PF
-,State of Palestine,PS
-,Gibraltar,GI
-,Kiribati,KI
-,Greenland,GL
-,Guam,GU
-,"China, Hong Kong SAR",HK
-,Indonesia,ID
-,Iran (Islamic Republic of),IR
-,Ireland,IE
-,Côte d'Ivoire,CI
-,"Korea, Dem. People's Rep. of",KP
-,"Korea, Republic of",KR
-,Lao People's Dem. Rep.,LA
-,Lesotho,LS
-,"China, Macao SAR",MO
-,Madagascar,MG
-,Malawi,MW
-,Malaysia,MY
-,Maldives,MV
-,Malta,MT
-,Mauritius,MU
-,"Moldova, Republic of",MD
-,Montenegro,ME
-,Montserrat,MS
-,Mozambique,MZ
-,Nauru,NR
-,Nepal,NP
-,Aruba,AW
-,Sint Maarten (Dutch part),SX
-,"Bonaire, Sint Eustatius and Saba",BQ
-,New Caledonia,NC
-,Vanuatu,VU
-,Niue,NU
-,Northern Mariana Islands,MP
-,Micronesia (Federated States of),FM
-,Marshall Islands,MH
-,Palau,PW
-,Papua New Guinea,PG
-,Timor-Leste,TL
-,Russian Federation,RU
-,Saint Kitts and Nevis,KN
-,Anguilla,AI
-,Saint Lucia,LC
-,Saint Pierre and Miquelon,PM
-,Saint Vincent and the Grenadines,VC
-,Serbia,RS
-,Seychelles,SC
-,Singapore,SG
-,Viet Nam,VN
-,Slovenia,SI
-,Zimbabwe,ZW
-,South Sudan,SS
-,Sweden,SE
-,"Switzerland, Liechtenstein",CH
-,Syrian Arab Republic,SY
-,Thailand,TH
-,Tokelau,TK
-,Tonga,TO
-,Türkiye,TR
-,Turks and Caicos Islands,TC
-,Tuvalu,TV
-,"Tanzania, United Republic of",TZ
-,Venezuela (Bolivarian Rep. of),VE
-,Wallis and Futuna Islands,WF
-,Samoa,WS
+
+Yemen Arab Republic,,
+Yemen People's Republic,,
+German Federal Republic,,
+
+Yugoslavia,,
