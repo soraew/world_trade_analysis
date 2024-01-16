@@ -21,6 +21,8 @@ Lebanon,Lebanon,LB
 Jordan,Jordan,JO
 Saudi Arabia,Saudi Arabia,SA
 Yemen,Yemen,YE
+Yemen Arab Republic,Yemen,YE
+Yemen People's Republic,Yemen,YE
 Kuwait,Kuwait,KW
 Bahrain,Bahrain,BH
 Qatar,Qatar,QA
@@ -64,48 +66,49 @@ Spain,Spain,ES
 Italy,Italy,IT
 Greece,Greece,GR
 Germany,Germany,DE
+German Federal Republic,Germany,DE
 Poland,Poland,PL
 Hungary,Hungary,HU
-Czech Republic,, Czech Republic,CZ
+Czech Republic,Czech Republic,CZ
 Norway,Norway,NO
 Denmark,Denmark,DK
 Iceland,Iceland,IS
-Turkey,, Türkiye,TR
+Turkey,Türkiye,TR
 Philippines,Philippines,PH
 Australia,Australia,AU
 New Zealand,New Zealand,NZ
 Japan,Japan,JP
-South Korea,, "Korea, Republic of",KR
+South Korea,"Korea, Republic of",KR
 Pakistan,Pakistan,PK
 Liberia,Liberia,LR
 Gabon,Gabon,GA
 China,China,CN
-North Korea,, "Korea, Dem. People's Rep. of",KP
+North Korea,"Korea, Dem. People's Rep. of",KP
 Kenya,Kenya,KE
 Ethiopia,Ethiopia,ET
 India,India,IN
 Guinea,Guinea,GN
-Cape Verde,, Cape Verde,CV
+Cape Verde,Cape Verde,CV
 Guinea-Bissau,Guinea-Bissau,GW
 Gambia,Gambia,GM
 Mali,Mali,ML
 Senegal,Senegal,SN
 Benin,Benin,BJ
 Niger,Niger,NE
-Ivory Coast,, Côte d'Ivoire,CI
+Ivory Coast,Côte d'Ivoire,CI
 Burkina Faso,Burkina Faso,BF
 Sierra Leone,Sierra Leone,SL
 Ghana,Ghana,GH
 Togo,Togo,TG
 Nigeria,Nigeria,NG
 South Africa,South Africa,ZA
-Swaziland,, Swaziland,SZ
-Russia,, Russian Federation,RU
+Swaziland,Swaziland,SZ
+Russia,Russian Federation,RU
 Romania,Romania,RO
 Bulgaria,Bulgaria,BG
 Ukraine,Ukraine,UA
 Finland,Finland,FI
-Moldova,, "Moldova, Republic of",MD
+Moldova,"Moldova, Republic of",MD
 Belarus,Belarus,BY
 Armenia,Armenia,AM
 Georgia,Georgia,GE
@@ -126,7 +129,7 @@ Israel,Israel,IL
 Bosnia and Herzegovina,Bosnia and Herzegovina,BA
 Central African Republic,Central African Republic,CF
 Congo,Congo,CG
-Democratic Republic of the Congo,, "Congo, Dem. Rep. of the",CD
+Democratic Republic of the Congo,"Congo, Dem. Rep. of the",CD
 Sao Tome and Principe,Sao Tome and Principe,ST
 Equatorial Guinea,Equatorial Guinea,GQ
 Cameroon,Cameroon,CM
@@ -135,13 +138,8 @@ Burundi,Burundi,BI
 Rwanda,Rwanda,RW
 Angola,Angola,AO
 Eritrea,Eritrea,ER
-Iran,, Iran (Islamic Republic of),IR
+Iran,Iran (Islamic Republic of),IR
 Afghanistan,Afghanistan,AF
 Uganda,Uganda,UG
-Tanzania,, "Tanzania, United Republic of",TZ
+Tanzania,"Tanzania, United Republic of",TZ
 Zambia,Zambia,ZM
-
-Yemen Arab Republic,,
-Yemen People's Republic,,
-German Federal Republic,,
-
