@@ -25,20 +25,6 @@ def minus_100y(date):
     else:
         return date
 
-# not sure if this is necessary
-def has_years_in_string(string):
-    if string is np.nan:
-        return string
-    elif '2016' in string or '2017' in string or '2018' in string or '2019' in string:
-        return True
-    else:
-        return False
-
-# not sure if this is necessary
-def find_fuzz(rta_df, country, column='RTA Name'):
-    fuzz_scores = rta_df[column].apply(lambda x: fuzz.partial_ratio(x, country))
-    return rta_df[fuzz_scores > 80]
-
 # BASIC PREPROCESSING => tmp_rta
 def preprocess_rta(rta):
     rta['date_of_sign_G'] = \
