@@ -170,3 +170,43 @@ def plot_communities_years(
 
         plt.title(f"flow: {flows}, {year} product:{product_code}", fontsize=25)
         plt.show()
+
+# %% basic plot
+def plot_basic_communities(G, partition, figsize=(8, 8)):
+    position = nx.spring_layout(G, k=0.9, iterations=50)
+    fig, ax = plt.subplots(figsize=figsize)
+    cmap = plt.get_cmap('Set1')
+    communities = set(partition.values())
+    colors = \
+        [cmap(i) for i in np.linspace(0.2, 0.7, len(communities))]
+    for i, community in enumerate(communities):
+        nodes = [node for node in G.nodes() if partition[node]==community]
+        G_tmp = G.subgraph(
+            nodes=nodes)
+        nx.draw_networkx_nodes(
+            G_tmp,
+            pos=position,
+            node_color=colors[i],
+            ax=ax,)
+    nx.draw_networkx_labels(
+        G,
+        labels=dict(zip(G.nodes(), G.nodes())),
+        pos=position,
+        font_size=11,
+        ax=ax,)
+    nx.draw_networkx_edges(
+        G, position,
+        edgelist=G.edges(),
+        width=0.2,
+        ax=ax)
+    plt.show()
+
+# %% community detection
+def get_louvain_partition(G):
+    communities = nx.community.louvain_communities(G)
+    communities = list(communities)
+    partition = dict()
+    for i, community in enumerate(communities):
+        for country in community:
+            partition[country] = i
+    return partition
