@@ -240,7 +240,7 @@ def preprocess_products(
         imports=True,
         csvs_root='../../csvs/',
         data_root='../../../../data/trade/BACI/',
-        data_file_name='top_ex_imp_2017_21_new.csv',
+        data_file_name='total_764_2016_21.csv',
         ):
     products = get_product_data(
         exports=exports,
@@ -263,3 +263,34 @@ def preprocess_products(
         suffixes=('_economy', '_partner'))
     products = products_labeled.copy()
     return products, country_df
+
+# def preprocess_products(
+#         exports=True,
+#         imports=True,
+#         csvs_root=csvs_root,
+#         data_root=data_root,
+#         data_file_name=data_file_name,
+#         ):
+#     products = get_product_data(
+#         exports=exports,
+#         imports=imports,
+#         csvs_root=csvs_root,
+#         data_root=data_root,
+#         data_file_name=data_file_name,
+#     )
+#     countries = get_countries(data_root=data_root)
+#     country_df = pd.read_csv(data_root + 'countries.csv')
+#     products_economy_labeled = products.merge(
+#         country_df,
+#         left_on='economy_label',
+#         right_on='Name',
+#         how='left')
+#     products_labeled = products_economy_labeled.merge(
+#         country_df,
+#         left_on='partner_label',
+#         right_on='Name',
+#         how='left',
+#         suffixes=('_economy', '_partner'))
+#     products = products_labeled.copy()
+#     return products, country_df
+
