@@ -1,4 +1,3 @@
-# %%
 import pandas as pd
 import numpy as np
 
@@ -6,7 +5,6 @@ import networkx as nx
 from warnings import filterwarnings
 filterwarnings('ignore')
 
-from thefuzz import fuzz
 from hfuncs.plotting_communities import plot_basic_communities, \
     get_louvain_partition
 
@@ -16,20 +14,6 @@ def minus_100y(date):
         return date - pd.offsets.DateOffset(years=100)
     else:
         return date
-
-# not sure if this is necessary
-def has_years_in_string(string):
-    if string is np.nan:
-        return string
-    elif '2016' in string or '2017' in string or '2018' in string or '2019' in string:
-        return True
-    else:
-        return False
-
-# not sure if this is necessary
-def find_fuzz(rta_df, country, column='RTA Name'):
-    fuzz_scores = rta_df[column].apply(lambda x: fuzz.partial_ratio(x, country))
-    return rta_df[fuzz_scores > 80]
 
 # BASIC PREPROCESSING => tmp_rta
 def preprocess_rta(rta):
@@ -181,49 +165,44 @@ def create_rta_network(rta_country_codes, country_codes_per_RTA):
                     edges_set.append(set((code_list[i], code_list[j])))
     return G_rta
 
-# %%
-# if __name__ == '__main__':
-csvs_root = '../../csvs/'
-git_csvs_root = '../../csvs_git/'
-# %%
-# load and preprocess RTA data
-rta = pd.read_csv(csvs_root + 'AllRTAs_new.csv')
-tmp_rta = preprocess_rta(rta)
-# %%
-# for converting RTA/ABBVs to countries
-EU_countries_str = 'Austria; Belgium; Cyprus; Czech Republic; Denmark; Estonia; Finland; France; Germany; Greece; Hungary; Ireland; Italy; Latvia; Lithuania; Luxembourg; Malta; Netherlands; Poland; Portugal; Slovak Republic; Slovenia; Spain; Sweden; United Kingdom'
-abbv_RTA_ids = [1170, 7, 130, 151, 909, 152, 17]
-abbv_rta_dict = abbv_to_countries_dict(tmp_rta, EU_countries_str, abbv_RTA_ids)
-# %%
-# convert RTA/ABVVs to countries
-tmp_rta_new = abbv_to_countries(tmp_rta, abbv_rta_dict)
-# %% work on 2017 RTA
-tmp_rta_new.reset_index(inplace=True, drop=True)
+if __name__ == '__main__':
+    csvs_root = '../../csvs/'
+    git_csvs_root = '../../csvs_git/'
 
-# %%
-rta_17 = get_rta_year(tmp_rta_new, '2017')
-rta_18 = get_rta_year(tmp_rta_new, '2018')
-rta_19 = get_rta_year(tmp_rta_new, '2019')
-print('Samoa' in rta_19.at[131, 'Current signatories'])
+    # load and preprocess RTA data
+    rta = pd.read_csv(csvs_root + 'AllRTAs_new.csv')
+    tmp_rta = preprocess_rta(rta)
 
-# %%
-# get all RTAs in country codes
-rta_to_country_codes = pd.read_csv(git_csvs_root + 'rta_to_country_codes.csv')
-rta_country_codes_17, country_codes_per_RTA_17 = \
-    get_country_codes_per_RTA(rta_17, rta_to_country_codes)
-rta_country_codes_18, country_codes_per_RTA_18 = \
-    get_country_codes_per_RTA(rta_18, rta_to_country_codes)
-rta_country_codes_19, country_codes_per_RTA_19 = \
-    get_country_codes_per_RTA(rta_19, rta_to_country_codes)
-rta_17_G = create_rta_network(rta_country_codes_17, country_codes_per_RTA_17)
-rta_18_G = create_rta_network(rta_country_codes_18, country_codes_per_RTA_18)
-rta_19_G = create_rta_network(rta_country_codes_19, country_codes_per_RTA_19)
+    # for converting RTA/ABBVs to countries
+    EU_countries_str = 'Austria; Belgium; Cyprus; Czech Republic; Denmark; Estonia; Finland; France; Germany; Greece; Hungary; Ireland; Italy; Latvia; Lithuania; Luxembourg; Malta; Netherlands; Poland; Portugal; Slovak Republic; Slovenia; Spain; Sweden; United Kingdom'
+    abbv_RTA_ids = [1170, 7, 130, 151, 909, 152, 17]
+    abbv_rta_dict = abbv_to_countries_dict(tmp_rta, EU_countries_str, abbv_RTA_ids)
 
-rta_17_partition = get_louvain_partition(rta_18_G)
-rta_18_partition = get_louvain_partition(rta_18_G)
-rta_19_partition = get_louvain_partition(rta_19_G)
-plot_basic_communities(rta_17_G, rta_17_partition)
-plot_basic_communities(rta_18_G, rta_18_partition)
-plot_basic_communities(rta_19_G, rta_19_partition)
-breakpoint()
+    # convert RTA/ABVVs to countries
+    tmp_rta_new = abbv_to_countries(tmp_rta, abbv_rta_dict)
+    tmp_rta_new.reset_index(inplace=True, drop=True)
+
+    rta_17 = get_rta_year(tmp_rta_new, '2017')
+    rta_18 = get_rta_year(tmp_rta_new, '2018')
+    rta_19 = get_rta_year(tmp_rta_new, '2019')
+    print('Samoa' in rta_19.at[131, 'Current signatories'])
+
+    # get all RTAs in country codes
+    rta_to_country_codes = pd.read_csv(git_csvs_root + 'rta_to_country_codes.csv')
+    rta_country_codes_17, country_codes_per_RTA_17 = \
+        get_country_codes_per_RTA(rta_17, rta_to_country_codes)
+    rta_country_codes_18, country_codes_per_RTA_18 = \
+        get_country_codes_per_RTA(rta_18, rta_to_country_codes)
+    rta_country_codes_19, country_codes_per_RTA_19 = \
+        get_country_codes_per_RTA(rta_19, rta_to_country_codes)
+    rta_17_G = create_rta_network(rta_country_codes_17, country_codes_per_RTA_17)
+    rta_18_G = create_rta_network(rta_country_codes_18, country_codes_per_RTA_18)
+    rta_19_G = create_rta_network(rta_country_codes_19, country_codes_per_RTA_19)
+
+    rta_17_partition = get_louvain_partition(rta_18_G)
+    rta_18_partition = get_louvain_partition(rta_18_G)
+    rta_19_partition = get_louvain_partition(rta_19_G)
+    plot_basic_communities(rta_17_G, rta_17_partition)
+    plot_basic_communities(rta_18_G, rta_18_partition)
+    plot_basic_communities(rta_19_G, rta_19_partition)
 
