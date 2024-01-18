@@ -1,23 +1,14 @@
 # %%
 import pandas as pd
 import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-
-from plotly.subplots import make_subplots
-import plotly.graph_objects as go
-import plotly.express as px
 
 import networkx as nx
-# import geopandas as gpd
-from geopy.distance import geodesic
-
-import pickle as pkl
 from warnings import filterwarnings
 filterwarnings('ignore')
 
 from thefuzz import fuzz
-from hfuncs.plotting_communities import plot_basic_communities
+from hfuncs.plotting_communities import plot_basic_communities, \
+    get_louvain_partition
 
 # funtions for preprocessing rta data
 def minus_100y(date):
@@ -119,6 +110,35 @@ def abbv_to_countries(tmp_rta, abbv_rta_dict):
     tmp_rta_new = replace_abbvs_with_countries(tmp_rta)
     return tmp_rta_new
 
+# GET YEARLY RTA DF
+def get_rta_year(tmp_rta_new, year='2017'):
+    rta_year = tmp_rta_new.copy()
+    if int(year) == 2017:
+        rta_year.at[131,'Current signatories'] = \
+            rta_year.at[131,'Current signatories']\
+                .replace('Samoa;', '')
+    if int(year) <= 2018:
+        # from 2019
+        rta_year.at[115,'Current signatories'] = \
+            rta_year.at[115,'Current signatories']\
+                .replace('Comoros;', '')
+    if int(year) <= 2019:
+        # from 2020
+        rta_year.at[131,'Current signatories'] = \
+            rta_year.at[131,'Current signatories']\
+                .replace('Solomon Islands;', '')
+    # til 2021
+    # United Kingdom
+    til_2021 = pd.read_csv(git_csvs_root + 'tmp_find.csv', index_col=0)
+    for i in til_2021.index:
+        if 'United Kingdom' in rta_year.at[i,'Current signatories']:
+            pass
+        else:
+            rta_year.at[i,'Current signatories'] = \
+                rta_year.at[i,'Current signatories'] + 'United Kingdom;'
+            assert 'United Kingdom' in rta_year.at[i,'Current signatories']
+    return rta_year
+
 # GET COUNTRY CODES PER RTA 
 def get_country_codes_per_RTA(tmp_rta_new, rta_to_country_codes):
     country_codes_per_RTA = []
@@ -168,7 +188,6 @@ git_csvs_root = '../../csvs_git/'
 # %%
 # load and preprocess RTA data
 rta = pd.read_csv(csvs_root + 'AllRTAs_new.csv')
-# /Users/soraward/School stuff/ResearchM/workspace/china_usa_trade/src/12_works/hfuncs/../../../csvs/AllRTAs.csv
 tmp_rta = preprocess_rta(rta)
 # %%
 # for converting RTA/ABBVs to countries
@@ -180,40 +199,8 @@ abbv_rta_dict = abbv_to_countries_dict(tmp_rta, EU_countries_str, abbv_RTA_ids)
 tmp_rta_new = abbv_to_countries(tmp_rta, abbv_rta_dict)
 # %% work on 2017 RTA
 tmp_rta_new.reset_index(inplace=True, drop=True)
-# tmp_find = find_fuzz(tmp_rta_new, year, 'Specific Entry/Exit dates')\
-#     ['Specific Entry/Exit dates'].values[0]
-# tmp_find
 
 # %%
-# from 2017 is Samoa but since it's from January 1st, we dismiss
-# from 2018
-def get_rta_year(tmp_rta_new, year='2017'):
-    rta_year = tmp_rta_new.copy()
-    if int(year) == 2017:
-        rta_year.at[131,'Current signatories'] = \
-            rta_year.at[131,'Current signatories']\
-                .replace('Samoa;', '')
-    if int(year) <= 2018:
-        # from 2019
-        rta_year.at[115,'Current signatories'] = \
-            rta_year.at[115,'Current signatories']\
-                .replace('Comoros;', '')
-    if int(year) <= 2019:
-        # from 2020
-        rta_year.at[131,'Current signatories'] = \
-            rta_year.at[131,'Current signatories']\
-                .replace('Solomon Islands;', '')
-    # til 2021
-    # United Kingdom
-    til_2021 = pd.read_csv(git_csvs_root + 'tmp_find.csv', index_col=0)
-    for i in til_2021.index:
-        if 'United Kingdom' in rta_year.at[i,'Current signatories']:
-            pass
-        else:
-            rta_year.at[i,'Current signatories'] = \
-                rta_year.at[i,'Current signatories'] + 'United Kingdom;'
-            assert 'United Kingdom' in rta_year.at[i,'Current signatories']
-    return rta_year
 rta_17 = get_rta_year(tmp_rta_new, '2017')
 rta_18 = get_rta_year(tmp_rta_new, '2018')
 rta_19 = get_rta_year(tmp_rta_new, '2019')
@@ -228,25 +215,9 @@ rta_country_codes_18, country_codes_per_RTA_18 = \
     get_country_codes_per_RTA(rta_18, rta_to_country_codes)
 rta_country_codes_19, country_codes_per_RTA_19 = \
     get_country_codes_per_RTA(rta_19, rta_to_country_codes)
-# %% 
-# create RTA network
-# 1/12TODOS:
-    # 1. 2016-19末 の間にin-forceになったRTAを考慮する 
-        # 30個くらいある
 rta_17_G = create_rta_network(rta_country_codes_17, country_codes_per_RTA_17)
 rta_18_G = create_rta_network(rta_country_codes_18, country_codes_per_RTA_18)
 rta_19_G = create_rta_network(rta_country_codes_19, country_codes_per_RTA_19)
-
-# %% 
-def get_louvain_partition(G):
-    communities = nx.community.louvain_communities(G)
-    communities = list(communities)
-    partition = dict()
-    for i, community in enumerate(communities):
-        for country in community:
-            partition[country] = i
-    # communities_set = set(partition.values())
-    return partition
 
 rta_17_partition = get_louvain_partition(rta_18_G)
 rta_18_partition = get_louvain_partition(rta_18_G)
@@ -256,4 +227,3 @@ plot_basic_communities(rta_18_G, rta_18_partition)
 plot_basic_communities(rta_19_G, rta_19_partition)
 breakpoint()
 
-# %%
