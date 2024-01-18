@@ -47,6 +47,7 @@ products = products.dropna(subset=['Code_economy', 'Code_partner']) # limit to c
 products = products[products['partner_label'] != products['economy_label']]
 
 NMI_list = []
+excluded_countries = []
 for YEAR in (2017, 2018, 2019):
     print(YEAR)
 # %%
@@ -137,23 +138,30 @@ for YEAR in (2017, 2018, 2019):
 
 # %%
 # normalize each partitions
+    excluded_countries_per_year = []
     all_countries = list(product_G.nodes())
     all_common_countries = []
     for country in all_countries:
         if country not in rta_year_partition.keys():
             print(country, 'not in rta_year_partition')
+            excluded_countries_per_year.append(country)
             pass
         elif country not in product_partition.keys():
             print(country, 'not in product_partition')
+            excluded_countries_per_year.append(country)
             pass
         elif country not in alliance_partition.keys():
             print(country, 'not in alliance_partition')
+            excluded_countries_per_year.append(country)
             pass
         elif country not in dist_partition.keys():
             print(country, 'not in dist_partition')
+            excluded_countries_per_year.append(country)
             pass
         else:
             all_common_countries.append(country)
+    excluded_countries.append(excluded_countries_per_year)
+
 # normalize rta_year_partition
     rta_year_partition_normalized = dict()
     for country in all_common_countries:
