@@ -3,21 +3,30 @@
 \usepackage{amsmath}
 \usepackage{enumerate}
 \usepackage{graphicx}
-% layout params
-% \setlength{\topmargin}{-1mm}
-% \setlength{\headheight}{0mm}
-% \setlength{\headsep}{0mm}
-% \setlength{\oddsidemargin}{2mm}
-% \setlength{\evensidemargin}{2mm}
-% \setlength{\textheight}{244mm}
-% \setlength{\textwidth}{160mm}
-% \setlength{\footskip}{16mm}
-% subsectionまで節番号をつける（subsubsection には番号を付けない）
+
+% for drawing network
+\usepackage{tikz}
+% 
+% for figures
+\usepackage[]{caption}
+\usetikzlibrary{automata, arrows.meta, positioning}
+% 
+% this is new from NN2
+\usepackage[]{float}
+
 \setcounter{secnumdepth}{2}
 
 % 節番号のスタイルを 1.1, 1.2, 2.1 といった形に設定する
 \renewcommand{\thesection}{\arabic{section}}
 \renewcommand{\thesubsection}{\arabic{section}.\arabic{subsection}}
+
+% 式番号のスタイル
+% 各節ごと番号を (1.1), (1.2), (2.1), (2.2) というように付けるスタイル
+% このコマンド列をコメントアウトすると (1), (2), (3), (4) という通し番号になる
+\makeatletter
+\@addtoreset{equation}{section}
+\makeatother
+\renewcommand{\theequation}{\arabic{section}.\arabic{equation}}
 
 
 \title{米中貿易戦争とその後の貿易パターンのネットワーク分析}
@@ -30,22 +39,14 @@
 \maketitle
 \newpage
 
-% Introduction (second page)
+% Abstract
 \section*{Abstract}
-The US-China trade war since 2018 has had a major impact on the world economy. 
-However, most research on this topic has focused on the magnitude of the effect
-and not much on it's characteristic and how the relationship between countries
-has changed.
-I employ a complex network approach for the timeframe 2017-2019 to study the 
-change in characteristic of the world trade network of one of the product 
-categories (Telecommunication equipment) that had the most impact due to 
-tariffs in the early years of the trade war.
-I find that the communities in the world trade network has followed a pattern 
-similar to the communities in the world RTA network.
-Suggesting that in times of shock, the way in which countries connect to each 
-other differ from when there aren't major shocks in the network.
-I also show that the relationship between countries within the same community 
-has changed, mainly the rise in Vietnam's network power.
+The US-China trade war since 2018 has had a major impact on the world economy.
+However, most research on this topic has focused on the magnitude of the effect and not much on it's characteristic and how the relationship between countries has changed.
+I employ a complex network approach for the timeframe 2017-2019 to study the change in characteristic of the world trade network of one of the product categories (Telecommunication equipment) that had the most impact due to tariffs in the early years of the trade war.
+I find that the communities in the world trade network has followed a pattern similar to the communities in the world RTA network.
+Suggesting that in times of shock, the way in which countries connect to each other differ from when there aren't major shocks in the network.
+% I also show that the relationship between countries within the same community has changed, mainly the rise in Vietnam's network power.
 \newpage
 
 % Table of Contents (third page)
@@ -53,35 +54,85 @@ has changed, mainly the rise in Vietnam's network power.
 \newpage
 
 % Rest of the document
-\section{TODO}
-\subsection{1/12}
-\subsubsection{Divide links between EU/abbvRTAs and others with their RTA size}
-\subsubsection{Create RTA for each year 2017-19}
-\subsubsection{Recompute NMI for each year}
-\subsubsection{Compare NMI(prod, tot), NMI(prod, dist), NMI(prod, rta)
-for each year}
-
-
-
-
+% Introduction 
 \section{Introduction}
-Prior research on your topic.
+    \subsection{Background}
+        \subsubsection{US-China Trade War}
+        The US-China trade war since 2018 has had a major impact on the world economy, since the US and China are the top two economies in the world by GDP, and their bilateral trade accounts for X\% of all trade in the world.
+        % Moreover, there has been analysyses suggesting that the trade war has had a particularly large effect to the countries in the Asia-Pacific. 
+        Hence, Understanding how the trade war has affected the world economy has been a hot topic of econommic research.
+        Here I will briefly overview how the events in the early years of the trade war has taken place.
+    
+    \subsection{Literature Review}
+        \subsubsection{Trade War}
+        Three avenues of research regarding the US-China Trade War has been identified in the literature. 
+        These are: 
+        \begin{enumerate}[i]
+            \item Ex ante estimation of impact 
+            \item Ex post estimation of impact 
+            \item Estimating trade diversion impacts
+        \end{enumerate}
+        In the following, I will briefly overview the literature in each of these avenues.
+        \paragraph{Estimating the effect ex ante}
+        Most studies in this avenue follow a similar approach, which is to suppose a scenario of the trade war and use a CGE(Computable General Equilibrium) model for each of these scenarios.
+        For example, Itakura\cite{Itakura2020} supposes three scenarios of the trade war, (i) US Tariffs against Chinese goods stay fixed until 2035.
+        (ii) In additino to scenario (i), decline in investment in the US and China will occur due to the uncertain economic enviroment.
+        (iii) in addition to scenario (ii), productivity will decline due to the relationship between productivity and trade openness.
+        They then use a CGE model to estimate the effect at 2035 each of these scenarios.
+        The estimations are compared against a baseline derived from the United Nation's outlook for US and China in 2035 respectively.
+        They find that in scenario (i), the loss in GDP is 
+        Amiti et al.\cite{Amiti2019} estimate the effect of the trade war on the US economy using a general equilibrium model.
+        They find that the trade war has had a negative effect on the US economy, and that the tariffs have been mostly borne by US consumers.
+        \paragraph{Estimating the effect ex post}
+        \paragraph{Estimating trade diversion effects}
+        \subsubsection{Trade Network}
+    \subsection{Research Question}
+        However, there has been little to no research in understanding "How" has the world trade network changed since the trade war. i.e.What is the characteristic of the world trade network after the trade war.
+\newpage
 
 \section{Data and Methods}
-Data: BACI trade data from CEPII.\\
-date range: 2017-2019\\
-Methods: Network analysis, centrality measures, etc.\\
-\subsection{Data}
-\subsection{Community detection}
-\subsection{Network centrality}
+    Data: BACI trade data from CEPII.\\
+    date range: 2017-2019\\
+    Methods: Network analysis, centrality measures, etc.\\
+    \subsection{Data}
+        \subsubsection{Trade}
+        \subsubsection{Distance}
+        \subsubsection{RTA}
+        \subsubsection{Military Alliances}
+
+    \subsection{Network analysis}
+        \subsubsection{Node Centrality}
+        \subsubsection{Eigenvector Centrality}
+    \subsection{Community detection}
+    \subsection{Comparing communities}
+\newpage
 
 \section{Networks}
-\subsection{Product Network}
-\subsection{RTA Network}
-\subsection{Military Alliancce Network}
+    \subsection{Product Network}
+        \subsubsection{Node Centrality}
+        \subsubsection{Eigenvector Centrality}
+    \subsection{RTA Network}
+        \subsubsection{Node Centrality}
+        \subsubsection{Eigenvector Centrality}
+    \subsection{Military Alliancce Network}
+        \subsubsection{Node Centrality}
+        \subsubsection{Eigenvector Centrality}
+\newpage
 
 \section{Results}
+\newpage
 
+\section{Conclusion}
+\newpage
+
+\section{References}
+\newpage
+
+\section{Acknowledgements}
+\newpage
+
+\bibliographystyle{unsrt}
+\bibliography{thesis.bib}
 
 % Add more sections or content as needed
 
