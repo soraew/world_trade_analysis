@@ -95,7 +95,7 @@ def abbv_to_countries(tmp_rta, abbv_rta_dict):
     return tmp_rta_new
 
 # GET YEARLY RTA DF
-def get_rta_year(tmp_rta_new, year='2017'):
+def get_rta_year(tmp_rta_new, year='2017', git_csvs_root='../../csvs_git/'):
     rta_year = tmp_rta_new.copy()
     if int(year) == 2017:
         rta_year.at[131,'Current signatories'] = \

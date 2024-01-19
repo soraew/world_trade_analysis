@@ -102,7 +102,12 @@ def get_product_data(
     return products
 
 # FOR GETTING NETWORK
-def create_network(year, product_name, product_df, label_columns=['economy_label', 'partner_label']):
+def create_network(
+        year,
+        product_name,
+        product_df,
+        label_columns=['economy_label', 'partner_label']
+        ):
     economy_label = label_columns[0]
     partner_label = label_columns[1]
     filter_product = \
