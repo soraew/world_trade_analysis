@@ -97,7 +97,10 @@ def abbv_to_countries(tmp_rta, abbv_rta_dict):
 # GET YEARLY RTA DF
 def get_rta_year(tmp_rta_new, year='2017', git_csvs_root='../../csvs_git/'):
     rta_year = tmp_rta_new.copy()
-    if int(year) == 2017:
+    sign_pre_year_filter = \
+        (rta_year['date_of_sign_G'] < pd.to_datetime(f'{str(year)}-01-01')).values
+    rta_year = rta_year[sign_pre_year_filter]
+    if int(year) <= 2017:
         rta_year.at[131,'Current signatories'] = \
             rta_year.at[131,'Current signatories']\
                 .replace('Samoa;', '')
@@ -113,14 +116,15 @@ def get_rta_year(tmp_rta_new, year='2017', git_csvs_root='../../csvs_git/'):
                 .replace('Solomon Islands;', '')
     # til 2021
     # United Kingdom
-    til_2021 = pd.read_csv(git_csvs_root + 'tmp_find.csv', index_col=0)
-    for i in til_2021.index:
-        if 'United Kingdom' in rta_year.at[i,'Current signatories']:
-            pass
-        else:
-            rta_year.at[i,'Current signatories'] = \
-                rta_year.at[i,'Current signatories'] + 'United Kingdom;'
-            assert 'United Kingdom' in rta_year.at[i,'Current signatories']
+    if int(year) <= 2020:
+        til_2021 = pd.read_csv(git_csvs_root + 'tmp_find.csv', index_col=0)
+        for i in til_2021.index:
+            if 'United Kingdom' in rta_year.at[i,'Current signatories']:
+                pass
+            else:
+                rta_year.at[i,'Current signatories'] = \
+                    rta_year.at[i,'Current signatories'] + 'United Kingdom;'
+                assert 'United Kingdom' in rta_year.at[i,'Current signatories']
     return rta_year
 
 # GET COUNTRY CODES PER RTA 
@@ -150,7 +154,7 @@ def get_country_codes_per_RTA(tmp_rta_new, rta_to_country_codes):
     return rta_country_codes, country_codes_per_RTA
 
 # CREATE RTA NETWORK
-def create_rta_network(rta_country_codes, country_codes_per_RTA):
+def create_rta_network(rta_country_codes, country_codes_per_RTA, weighted=False):
     G_rta = nx.Graph()
     economy_nodes = rta_country_codes
     G_rta.add_nodes_from(economy_nodes)
@@ -158,9 +162,13 @@ def create_rta_network(rta_country_codes, country_codes_per_RTA):
     for code_list in country_codes_per_RTA:
         for i in range(len(code_list)):
             for j in range(i+1, len(code_list)):
-                if set((code_list[i], code_list[j])) in edges_set:
-                    continue
-                else: # add edge
+                if not weighted:
+                    if set((code_list[i], code_list[j])) in edges_set:
+                        continue
+                    else: # add edge
+                        G_rta.add_edge(code_list[i], code_list[j])
+                        edges_set.append(set((code_list[i], code_list[j])))
+                else:
                     G_rta.add_edge(code_list[i], code_list[j])
                     edges_set.append(set((code_list[i], code_list[j])))
     return G_rta
