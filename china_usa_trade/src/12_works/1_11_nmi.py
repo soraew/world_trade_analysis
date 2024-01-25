@@ -27,6 +27,7 @@ from hfuncs.rta import *
 from hfuncs.dist import *
 from hfuncs.alliance import *
 
+
 # %%
 # for loading data
 csvs_root= '../../csvs/'
@@ -45,13 +46,17 @@ products, country_df = preprocess_products(
 products = products.dropna(subset=['Code_economy', 'Code_partner']) # limit to countries
 products = products[products['partner_label'] != products['economy_label']]
 
-YEARs = []
-NMI_rta = []
-NMI_dist = []
-NMI_total = []
-NMI_alliance = []
+YEARs = [2016, 2017, 2018, 2019]
+NMI_product_v_rta = []
+NMI_product_v_dist = []
+NMI_product_v_total = []
+NMI_product_v_alliance = []
+
+NMI_total_v_rta = []
+NMI_total_v_dist = []
+NMI_total_v_alliance = []
 excluded_countries = []
-for YEAR in (2017, 2018, 2019):
+for YEAR in YEARs:
     print(YEAR)
     # load and preprocess RTA data
     rta = pd.read_csv(csvs_root + 'AllRTAs_new.csv')
@@ -75,7 +80,7 @@ for YEAR in (2017, 2018, 2019):
     rta_country_codes_year, country_codes_per_rta_year = \
         get_country_codes_per_RTA(rta_year, rta_to_country_codes)
     rta_year_G = \
-        create_rta_network(rta_country_codes_year, country_codes_per_rta_year)
+        create_rta_network(rta_country_codes_year, country_codes_per_rta_year, weighted=True)
     rta_year_partition = get_louvain_partition(rta_year_G)
 
     # create product network
@@ -113,10 +118,16 @@ for YEAR in (2017, 2018, 2019):
     v4_to_products = pd.read_csv(git_csvs_root + 'v4_to_products.csv')
     v4_active_new = preprocess_alliances(v4, v4_to_products)
     alliance_lists = get_alliance_lists(v4_active_new)
-    ally_G = create_ally_network(alliance_lists, v4_active_new)
+    ally_G = create_ally_network(alliance_lists, v4_active_new, weighted=True)
     # %% 
     # get alliance communmities
     alliance_partition = get_louvain_partition(ally_G)
+    # add important countries that are not allied
+    non_allied_countries = \
+        ['HK', 'MO', 'TW', 'VN', 'SG', 'TH', 'SE', 'CH']
+    for i, country in enumerate(non_allied_countries):
+        alliance_partition[country] = -i
+
 
     # %%
     # normalize each partitions
@@ -125,11 +136,11 @@ for YEAR in (2017, 2018, 2019):
     all_common_countries = []
     for country in all_countries:
         if country not in rta_year_partition.keys():
-            print(country, 'not in rta_year_partition')
+            # print(country, 'not in rta_year_partition')
             excluded_countries_per_year.append(country)
             pass
         elif country not in product_partition.keys():
-            print(country, 'not in product_partition')
+            # print(country, 'not in product_partition')
             excluded_countries_per_year.append(country)
             pass
         elif country not in total_partition.keys():
@@ -137,11 +148,14 @@ for YEAR in (2017, 2018, 2019):
             excluded_countries_per_year.append(country)
             pass
         elif country not in alliance_partition.keys():
-            print(country, 'not in alliance_partition')
+            # # Hong Kong, Macao, Taiwan, Viet Nam, Singapore
+            # # not in alliance_partition
+            # # ==> add as sole communities
+            # print(country, 'not in alliance_partition')
             excluded_countries_per_year.append(country)
             pass
         elif country not in dist_partition.keys():
-            print(country, 'not in dist_partition')
+            # print(country, 'not in dist_partition')
             excluded_countries_per_year.append(country)
             pass
         else:
@@ -186,30 +200,64 @@ for YEAR in (2017, 2018, 2019):
     print(f'NMI(product, total) = {product_v_total}')
     print(f'NMI(product, dist) = {product_v_dist}')
     print(f'NMI(product, alliance) = {product_v_alliance}')
+    NMI_product_v_rta.append(product_v_rta)
+    NMI_product_v_total.append(product_v_total)
+    NMI_product_v_dist.append(product_v_dist)
+    NMI_product_v_alliance.append(product_v_alliance)
 
-    YEARs.append(YEAR)
-    NMI_rta.append(product_v_rta)
-    NMI_total.append(product_v_total)
-    NMI_dist.append(product_v_dist)
-    NMI_alliance.append(product_v_alliance)
+    total_v_rta = \
+        NMI(total_partition_normalized_values, rta_year_partition_normalized_values)
+    total_v_dist = \
+        NMI(total_partition_normalized_values, dist_partition_normalized_values)
+    total_v_alliance = \
+        NMI(total_partition_normalized_values, alliance_partition_normalized_values)
+    print(f'NMI(total, rta) = {total_v_rta}')
+    print(f'NMI(total, dist) = {total_v_dist}')
+    print(f'NMI(total, alliance) = {total_v_alliance}')
+    NMI_total_v_rta.append(total_v_rta)
+    NMI_total_v_dist.append(total_v_dist)
+    NMI_total_v_alliance.append(total_v_alliance)
     
-NMI_df = pd.DataFrame({
-        'YEAR': YEARs,
-        'NMI_rta': NMI_rta,
-        'NMI_total': NMI_total,
-        'NMI_dist': NMI_dist,
-        'NMI_alliance': NMI_alliance})
+NMI_product_v_df = pd.DataFrame({
+        'YEAR': pd.to_datetime(YEARs, format='%Y'),
+        'NMI_product_v_rta': NMI_product_v_rta,
+        'NMI_product_v_total': NMI_product_v_total,
+        'NMI_product_v_dist': NMI_product_v_dist,
+        'NMI_product_v_alliance': NMI_product_v_alliance})
+
+NMI_total_v_df = pd.DataFrame({
+        'YEAR': pd.to_datetime(YEARs, format='%Y'),
+        'NMI_total_v_rta': NMI_total_v_rta,
+        'NMI_total_v_dist': NMI_total_v_dist,
+        'NMI_total_v_alliance': NMI_total_v_alliance})
+
 fig = px.line(
-    NMI_df,
+    NMI_product_v_df,
     x='YEAR',
-    y=['NMI_rta', 'NMI_total', 'NMI_dist', 'NMI_alliance'],
-    title='NMI between product and other networks')
+    y=['NMI_product_v_rta', 'NMI_product_v_total', 'NMI_product_v_dist', 'NMI_product_v_alliance'],
+    title='NMI between product and other networks',
+    markers=True,)
 fig.show()
+fig.write_image(f'product_v_others.eps')
+
+fig = px.line(
+    NMI_total_v_df,
+    x='YEAR',
+    y=['NMI_total_v_rta', 'NMI_total_v_dist', 'NMI_total_v_alliance'],
+    title='NMI between total and other networks',
+    markers=True,)
+fig.show()
+fig.write_image(f'total_v_others.eps')
 
 # %%
 # what are the friends of a country in each network?
 country = 'JP' 
+partner = 'CN'
 if country:
+    product_country_community = product_partition[country]
+    product_country_friends = \
+        [code for code in product_partition.keys() if \
+            product_partition[code] == product_country_community]
     dist_country_community = dist_partition[country]
     dist_country_friends = \
         [code for code in dist_partition.keys() if \
@@ -218,11 +266,20 @@ if country:
     rta_country_friends = \
         [code for code in rta_year_partition.keys() if \
             rta_year_partition[code] == rta_country_community]
-    product_country_community = product_partition[country]
-    product_country_friends = \
-        [code for code in product_partition.keys() if \
-            product_partition[code] == product_country_community]
+    alliance_country_community = alliance_partition[country]
+    alliance_country_friends = \
+        [code for code in alliance_partition.keys() if \
+            alliance_partition[code] == alliance_partition[country]]
+    product_17_764_KUSD = products.query(
+        'product=="764" and year==2017\
+            and Code_economy==@country and Code_partner==@partner')['KUSD'].values[0]
+    product_19_764_KUSD = products.query(
+        'product=="764" and year==2019\
+            and Code_economy==@country and Code_partner==@partner')['KUSD'].values[0]
+    product_764_diff = product_19_764_KUSD - product_17_764_KUSD
+    print(f"change in {country}'s imports from {partner}: {product_764_diff}")
     print(f'{country} product friends: {product_country_friends}')
-    print(f'{country} rta friends: {rta_country_friends}')
     print(f'{country} dist friends: {dist_country_friends}')
+    print(f'{country} rta friends: {rta_country_friends}')
+    print(f'{country} alliance friends: {alliance_country_friends}')
 
