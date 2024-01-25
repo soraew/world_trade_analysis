@@ -254,7 +254,10 @@ def preprocess_products(
         data_root=data_root,
         data_file_name=data_file_name,
     )
-    country_df = pd.read_csv(data_root + 'countries.csv')
+    country_df = \
+        pd.read_csv(
+            data_root + 'countries.csv',
+            keep_default_na=False)
     products_economy_labeled = products.merge(
         country_df,
         left_on='economy_label',
