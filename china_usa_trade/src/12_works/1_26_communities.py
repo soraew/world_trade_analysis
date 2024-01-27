@@ -1,8 +1,11 @@
 # %%
+import numpy as np
 import pandas as pd
-import plotly.express as px
-from sklearn.metrics import normalized_mutual_info_score as NMI
 import igraph as ig
+import networkx as nx
+import plotly.express as px
+import matplotlib.pyplot as plt
+from sklearn.metrics import normalized_mutual_info_score as NMI
 import pickle as pkl
 import itertools
 
@@ -64,6 +67,23 @@ def get_dist_G(csvs_root='../../csvs/', git_csvs_root='../../csvs_git/'):
     dist_inv = pd.read_csv(git_csvs_root + 'dist_inv.csv')
     dist_G = get_dist_network(dist_inv)
     return dist_G
+# get louvain partitions
+def get_louvain_orig_partition(G):
+    communities_orig = nx.community.louvain_communities(G)
+    communities = list(communities_orig)
+    partition = dict()
+    for i, community in enumerate(communities):
+        for country in community:
+            partition[country] = i
+    return partition, communities_orig
+def get_greedy_orig_partition(G):
+    communities_orig = nx.community.greedy_modularity_communities(G)
+    communities = list(communities_orig)
+    partition = dict()
+    for i, community in enumerate(communities):
+        for country in community:
+            partition[country] = i
+    return partition, communities_orig
 
 # %% stuff to run once(not every year)
 # load and preprocess PRODUCT data
@@ -81,15 +101,9 @@ tmp_rta_new = process_rta(csvs_root, git_csvs_root)
 # %% stuff to run every year
 # PRODUCT
 product_G = create_network(
-    YEAR,
-    '764',
-    products,
-    ['Code_economy', 'Code_partner'])
-total_G = create_network(
-    YEAR,
-    'TOTAL',
-    products[products['KUSD'] > 0],
-    ['Code_economy', 'Code_partner'])
+    YEAR, '764', products, ['Code_economy', 'Code_partner'])
+total_G = create_network( YEAR, 'TOTAL',
+    products[products['KUSD'] > 0], ['Code_economy', 'Code_partner'])
 # RTA
 rta_year_G = get_rta_year_G(tmp_rta_new, YEAR, git_csvs_root)
 # ALLIANCE and DIST
@@ -103,102 +117,115 @@ if YEAR == 2017:
     # DIST
     dist_G = get_dist_G(csvs_root, git_csvs_root)
 
-# %% get louvain partitions
-def get_louvain_orig_partition(G):
-    communities_orig = nx.community.louvain_communities(G)
-    communities = list(communities_orig)
-    partition = dict()
-    for i, community in enumerate(communities):
-        for country in community:
-            partition[country] = i
-    return partition, communities_orig
-def get_gn_orig_partition(G):
-    communities_orig = nx.community.girvan_newman(G)
-    communities_orig_normalized = []
-    tmp_communities_orig = next(communities_orig)
-    for community in tmp_communities_orig:
-        print('gn')
-        communities_orig_normalized.append(community)
-    communities = list(communities_orig)
-    partition = dict()
-    for i, community in enumerate(communities):
-        for country in community:
-            partition[country] = i
-    return partition, communities_orig_normalized
-# %% debug gn
-G = product_G.copy()
-communities_orig = nx.community.girvan_newman(G)
-communities_orig_normalized = []
-# tmp_communities_orig = next(communities_orig)
-max_iter = 100
-old_mod = -1
-for i, tmp_communities_orig in enumerate(communities_orig):
-    if i > max_iter:
-        break
-    else:
-        print(i, end=' ')
-        new_mod = nx.community.quality.modularity(
-            G,
-            tmp_communities_orig)
-        if new_mod > old_mod:
-            print(f'new modularity for gn: {new_mod}')
-            old_mod = new_mod
-            communities_orig = tmp_communities_orig
-communities_orig
-
+# %% LOUVAIN
+product_louvain_partition, product_louvain_orig = \
+    get_louvain_orig_partition(product_G)
+# for each country, get the number of edges within the same community and the total number of edges out of community
 # %%
-communities_orig_normalized = []
-for community in tmp_communities_orig:
-    print('gn')
-    communities_orig_normalized.append(community)
-communities = list(communities_orig)
-partition = dict()
-for i, community in enumerate(communities):
+for community in product_louvain_orig:
     for country in community:
-        partition[country] = i
-fig = plot_communities_geo(partition, iso_corr,
-                            'Telecommunication equipment', YEAR)
-fig.show()
+        import_partners = product_G[country]
+        # as_importer = products.query('Code_economy==@country')
+        # as_exporter = products.query('Code_partner==@country')
+        # as_importer
+
+
 # %%
 
-louvain_product_partition, louvain_product_orig = get_louvain_orig_partition(product_G)
-gn_product_partition, gn_product_orig = get_gn_orig_partition(product_G)
-fig = plot_communities_geo(louvain_product_partition, iso_corr,
+
+product_louvain_modularity = \
+    nx.community.quality.modularity(
+        product_G,
+        product_louvain_orig)
+fig = plot_communities_geo(product_louvain_partition, iso_corr,
                            'Telecommunication equipment', YEAR)
+print('product_louvain_modularity: ', product_louvain_modularity)
 fig.show()
-fig = plot_communities_geo(gn_product_partition, iso_corr,
-                           'Telecommunication equipment', YEAR)
-fig.show()
+
+# %%
+# IGRAPH
+# create network from product data for igraph
+# (for walktrap, maybe make weighted, undirected graph later)
+year = 2017
+product_name = '764'
+product_df = products[products['KUSD'] > 0]
+label_columns=['Code_economy', 'Code_partner']
+
+economy_label = label_columns[0]
+partner_label = label_columns[1]
+filter_product = \
+    (product_df['product']==product_name).values
+filter_year = \
+    (product_df['year']==year).values 
+product_df_cp = product_df[filter_product & filter_year]\
+    [[economy_label, partner_label, 'flow', 'KUSD']].copy()
+# create network
+g = ig.Graph(directed=True)
+
+economy_nodes = list(product_df_cp[economy_label].unique())
+partner_nodes = list(product_df_cp[partner_label].unique())
+all_nodes = list(set(economy_nodes + partner_nodes))
+g.add_vertices(all_nodes)
+
+edges = [] 
+weights = []
+for index, row in product_df_cp.iterrows():
+    flow = row['flow']
+    if flow == 1: # import
+        exporter = row[partner_label]
+        importer = row[economy_label]
+    elif flow == 2: # export
+        exporter = row[economy_label]
+        importer = row[partner_label]
+    kusd = row['KUSD']
+    edges.append((exporter, importer))
+    weights.append(kusd)
+
+g.add_edges(edges)
+g.es['weight'] = weights
+
+# Plot the graph
+layout = g.layout(layout="auto")
+# fig, ax = plt.subplots()
+ig.plot(g)
+# plt.plot(g, layout=layout, vertex_label=g.vs['name'], edge_width=g.es['weight'])
+plt.show()
+
+
 breakpoint()
+
+
 
 # using igraph
 ig_product_G = ig.Graph.from_networkx(product_G)
 ig_product_G.vs['name'] = ig_product_G.vs['_nx_name']
+# set weight from networkx graph
+ig_product_G.es['weight'] = [product_G[u][v]['weight'] for u, v in ig_product_G.get_edgelist()]
+# %%
 
 # %% get spinglass partition
 # sg_product_communities = ig_product_G.community_spinglass()
 sg_product_communities = ig_product_G.community_walktrap()
 # sg_product_communities = ig_product_G.community_edge_betweenness(clusters=40)
+
 if isinstance(sg_product_communities, ig.VertexDendrogram):
     sg_product_communities = sg_product_communities.as_clustering()
-# %%
-sg_product_communities.membership
-print(type(sg_product_communities))
+# sg_product_communities.membership
 # get partition
 sg_product_partition = dict()
 for i, country in enumerate(ig_product_G.vs['name']):
     sg_product_partition[country] = sg_product_communities.membership[i]
+
+sg_modularity = sg_product_communities.modularity
+
 fig = plot_communities_geo(sg_product_partition, iso_corr,
                            'Telecommunication equipment', YEAR)
 fig.show()
-product_modularity = \
-    nx.community.quality.modularity(
-        product_G,
-        louvain_product_orig)
-sg_modularity = sg_product_communities.modularity
-print(f'louvain:',product_modularity)
+
+
+print(f'louvain:',product_louvain_modularity)
 print(f'spinglass:',sg_modularity)
-print(f'spinglass > louvain:',sg_modularity > product_modularity)
+print(f'spinglass > louvain:',sg_modularity > product_louvain_modularity)
 
 
 # # %%
