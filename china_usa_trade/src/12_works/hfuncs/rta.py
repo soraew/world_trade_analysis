@@ -30,12 +30,13 @@ def preprocess_rta(rta):
     rta['inactive_date'] = rta['inactive_date'].apply(lambda x: minus_100y(x))
 
     sign_pre_2016_filter = (rta['date_of_sign_G'] < pd.to_datetime('2016-01-01')).values
+    breakpoint()
 
     inactive_between_2016_2019_filter = \
-        (rta['inactive_date'] > pd.to_datetime('2016-01-01')).values & \
+        (rta['inactive_date'] >= pd.to_datetime('2016-01-01')).values & \
         (rta['inactive_date'] < pd.to_datetime('2020-01-01')).values # 2016-19の間にinactive
     inactive_post_2019_filter = \
-        (rta['inactive_date'] >= pd.to_datetime('2020-01-01')).values # 2016年以降にinactive
+        (rta['inactive_date'] >= pd.to_datetime('2020-01-01')).values # 2019年以降にinactive
     post_2019_add_filter = \
         inactive_post_2019_filter & ~inactive_between_2016_2019_filter
 
