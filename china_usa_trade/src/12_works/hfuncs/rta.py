@@ -7,6 +7,7 @@ filterwarnings('ignore')
 
 from hfuncs.plotting_communities import plot_basic_communities, \
     get_louvain_partition
+from hfuncs.others import find_fuzz
 
 # funtions for preprocessing rta data
 def minus_100y(date):
@@ -29,19 +30,18 @@ def preprocess_rta(rta):
     rta['date_of_sign_S'] = rta['date_of_sign_S'].apply(lambda x: minus_100y(x))
     rta['inactive_date'] = rta['inactive_date'].apply(lambda x: minus_100y(x))
 
-    sign_pre_2016_filter = (rta['date_of_sign_G'] < pd.to_datetime('2016-01-01')).values
-    breakpoint()
+    # sign_pre_2016_filter = (rta['date_of_sign_G'] < pd.to_datetime('2016-01-01')).values
 
-    inactive_between_2016_2019_filter = \
+    inactive_between_2016_2021_filter = \
         (rta['inactive_date'] >= pd.to_datetime('2016-01-01')).values & \
-        (rta['inactive_date'] < pd.to_datetime('2020-01-01')).values # 2016-19の間にinactive
-    inactive_post_2019_filter = \
-        (rta['inactive_date'] >= pd.to_datetime('2020-01-01')).values # 2019年以降にinactive
-    post_2019_add_filter = \
-        inactive_post_2019_filter & ~inactive_between_2016_2019_filter
+        (rta['inactive_date'] < pd.to_datetime('2022-01-01')).values # 2016-21の間にinactive
+    inactive_post_2021_filter = \
+        (rta['inactive_date'] >= pd.to_datetime('2022-01-01')).values # 2021年以降にinactive
+    post_2021_add_filter = \
+        inactive_post_2021_filter & ~inactive_between_2016_2021_filter
 
     currently_active_filter = (rta['Status'] == 'In Force').values
-    use_filter = (post_2019_add_filter | currently_active_filter) & sign_pre_2016_filter
+    use_filter = (post_2021_add_filter | currently_active_filter) # & sign_pre_2016_filter
 
     tmp_rta = rta[use_filter]
     tmp_rta = tmp_rta[['RTA ID', 'RTA Name', 'Status', 'date_of_sign_G',
@@ -101,24 +101,61 @@ def get_rta_year(tmp_rta_new, year='2017', git_csvs_root='../../csvs_git/'):
     sign_pre_year_filter = \
         (rta_year['date_of_sign_G'] < pd.to_datetime(f'{str(year)}-01-01')).values
     rta_year = rta_year[sign_pre_year_filter]
+    if year == '2017':
+        breakpoint()
+    # from 2017
+    if int(year) <= 2016:
+        rta_year.at[692,'Current signatories'] = \
+            rta_year.at[692,'Current signatories']\
+                .replace('Ecuador;', '')
+    # from 2018
     if int(year) <= 2017:
-        rta_year.at[131,'Current signatories'] = \
-            rta_year.at[131,'Current signatories']\
-                .replace('Samoa;', '')
+        # rta_year.at[953,'Current signatories'] = \
+        #     rta_year.at[953,'Current signatories']\
+        #         .replace('Liechtenstein;', '').replace('Switzerland;', '')
+        rta_year.at[897, 'Current signatories'] = \
+            rta_year.at[897, 'Current signatories']\
+                .replace('Mozambique;', '')# done tile here
+    # from 2019
     if int(year) <= 2018:
-        # from 2019
-        rta_year.at[115,'Current signatories'] = \
-            rta_year.at[115,'Current signatories']\
+        rta_year.at[469,'Current signatories'] = \
+            rta_year.at[469,'Current signatories']\
                 .replace('Comoros;', '')
+        rta_year.at[640,'Current signatories'] = \
+            rta_year.at[640,'Current signatories']\
+                .replace('Viet Nam;', '')
+        rta_year.at[901,'Current signatories'] = \
+            rta_year.at[901,'Current signatories']\
+                .replace('Costa Rica', '')
+        rta_year.at[994,'Current signatories'] = \
+            rta_year.at[994,'Current signatories']\
+                .replace('Malaysia', '')
+    # from 2020
     if int(year) <= 2019:
-        # from 2020
-        rta_year.at[131,'Current signatories'] = \
-            rta_year.at[131,'Current signatories']\
+        rta_year.at[759,'Current signatories'] = \
+            rta_year.at[759,'Current signatories']\
                 .replace('Solomon Islands;', '')
+    # # from 2021, 2022
+    if int(year) <= 2020:
+        rta_year.at[640,'Current signatories'] = \
+            rta_year.at[640,'Current signatories']\
+                .replace('Peru;', '').replace('Malaysia;', '')
+        rta_year.at[901,'Current signatories'] = \
+            rta_year.at[901,'Current signatories']\
+                .replace('Panama;', '')
+        rta_year.at[994,'Current signatories'] = \
+            rta_year.at[994,'Current signatories']\
+                .replace('Cambodia;', '')
+        rta_year.at[1111,'Current signatories'] = \
+            rta_year.at[1111,'Current signatories']\
+                .replace('Solomon Islands;', '').replace('Samoa;', '')
     # til 2021
     # United Kingdom
     if int(year) <= 2020:
-        til_2021 = pd.read_csv(git_csvs_root + 'tmp_find.csv', index_col=0)
+        # til_2021 = pd.read_csv(git_csvs_root + 'tmp_find.csv', index_col=0)
+        til_2021=[6,12,18,33,44,52,63,68,73,77,91,92,93,107,109,111,112,114,
+              118,123,132,137,138,142,143,144,145,148,154,167,386,564,605,619,
+              623,680,712,836,847,848,849,850,869,872, 907,1002,1093,1094,1148]
         for i in til_2021.index:
             if 'United Kingdom' in rta_year.at[i,'Current signatories']:
                 pass
@@ -182,6 +219,7 @@ if __name__ == '__main__':
     rta = pd.read_csv(csvs_root + 'AllRTAs_new.csv')
     tmp_rta = preprocess_rta(rta)
 
+
     # for converting RTA/ABBVs to countries
     EU_countries_str = 'Austria; Belgium; Cyprus; Czech Republic; Denmark; Estonia; Finland; France; Germany; Greece; Hungary; Ireland; Italy; Latvia; Lithuania; Luxembourg; Malta; Netherlands; Poland; Portugal; Slovak Republic; Slovenia; Spain; Sweden; United Kingdom'
     abbv_RTA_ids = [1170, 7, 130, 151, 909, 152, 17]
@@ -189,11 +227,20 @@ if __name__ == '__main__':
 
     # convert RTA/ABVVs to countries
     tmp_rta_new = abbv_to_countries(tmp_rta, abbv_rta_dict)
-    tmp_rta_new.reset_index(inplace=True, drop=True)
+    # tmp_rta_new.reset_index(inplace=True, drop=True)
+    # set RTA ID as index and sort by it
+    tmp_rta_new.set_index('RTA ID', inplace=True)
+    tmp_rta_new.sort_index(inplace=True)
 
+    
+
+    rta_16 = get_rta_year(tmp_rta_new, '2016')
     rta_17 = get_rta_year(tmp_rta_new, '2017')
     rta_18 = get_rta_year(tmp_rta_new, '2018')
-    rta_19 = get_rta_year(tmp_rta_new, '2019')
+    rta_19 = get_rta_year(tmp_rta_new, '2020')
+    rta_20 = get_rta_year(tmp_rta_new, '2019')
+    rta_21 = get_rta_year(tmp_rta_new, '2021')
+
     print('Samoa' in rta_19.at[131, 'Current signatories'])
 
     # get all RTAs in country codes
