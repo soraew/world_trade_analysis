@@ -1,24 +1,15 @@
 # %%
 # imports
 import pandas as pd
-import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
 
-from plotly.subplots import make_subplots
-import plotly.graph_objects as go
 import plotly.express as px
+import pickle as pkl
 
-import networkx as nx
-import geopandas as gpd
-from geopy.distance import geodesic
 from sklearn.metrics import normalized_mutual_info_score as NMI
 
-import pickle as pkl
 from warnings import filterwarnings
 filterwarnings('ignore')
 
-from thefuzz import fuzz
 from hfuncs.preprocessing import *
 from hfuncs.plotting import *
 from hfuncs.graphs import *
@@ -27,16 +18,20 @@ from hfuncs.rta import *
 from hfuncs.dist import *
 from hfuncs.alliance import *
 
-show = False
-only_nmis = True
-
+SHOW = False
+SHOW_NMI = False
+WRITE = False
+LRN = 10
+# YEARs = [2016]
+YEARs = [2016, 2017, 2018, 2019, 2020, 2021]
 
 # %%
 # for loading data
 csvs_root= '../../csvs/'
 git_csvs_root = '../../csvs_git/'
 data_root= '../../../../data/trade/BACI/'
-images_root = 'images/'
+images_root = 'images/communities2/'
+nmi_images_root = 'images/nmis2/'
 data_file_name='total_764_2016_21.csv'
 
 # %%
@@ -75,12 +70,25 @@ def plot_communities_geo(
         tmp_tmp = pd.DataFrame({'iso2': sublist, 'community': community_arr})
         tmp = pd.concat([tmp, tmp_tmp], axis=0)
 
+    tmp_gpby_ordered = \
+        tmp.groupby(['community']).count().reset_index()\
+        .sort_values(by='iso2', ascending=False)
+    tmp_gpby_ordered['community_new'] = np.arange(ncomms)
+    tmp_gpby_ordered['community_new'] = tmp_gpby_ordered.apply(lambda row: row['community_new'] if \
+        row['iso2'] > 1 else -1, axis=1)
+    tmp = pd.merge(
+        tmp, tmp_gpby_ordered[['community', 'community_new']],
+        on='community', how='left')
+    tmp = tmp.sort_values(by='community_new', ascending=True)
+    tmp['community'] = tmp['community_new'].astype(str)
+
     # merge iso2 and iso3
     tmp = pd.merge(tmp, iso_corr, on='iso2', how='left')
+    color_seq = px.colors.qualitative.Set1[:ncomms]
     fig = px.choropleth(
         locations=tmp['iso3'],
         color=tmp['community'],
-        color_discrete_sequence=px.colors.qualitative.Set1[:ncomms],
+        color_discrete_sequence=color_seq,
         locationmode='ISO-3',)
     if TYPE=='Telecommunication equipment' or TYPE=='RTA' or TYPE=='Total' and YEAR:
         title = f'{TYPE} communities in {YEAR}'
@@ -99,9 +107,16 @@ def plot_communities_geo(
         fig.show()
     return fig
 
+def get_louvain_orig_partition(G):
+    communities_orig = nx.community.louvain_communities(G)
+    communities = list(communities_orig)
+    partition = dict()
+    for i, community in enumerate(communities):
+        for country in community:
+            partition[country] = i
+    return partition, communities_orig
 # %%
 
-YEARs = [2016, 2017, 2018, 2019, 2020, 2021]
 NMI_product_v_rta = []
 NMI_product_v_dist = []
 NMI_product_v_total = []
@@ -125,11 +140,16 @@ for YEAR in YEARs:
     abbv_RTA_ids = [1170, 7, 130, 151, 909, 152, 17]
     abbv_rta_dict = \
         abbv_to_countries_dict(tmp_rta, EU_countries_str, abbv_RTA_ids)
+    with open(git_csvs_root + 'abbv_rta_dict.pkl', 'wb') as f:
+        pkl.dump(abbv_rta_dict, f)
+    # breakpoint()
+
 
     # convert RTA/ABVVs to countries
     tmp_rta_new = abbv_to_countries(tmp_rta, abbv_rta_dict)
     tmp_rta_new.reset_index(inplace=True, drop=True)
-
+    tmp_rta_new.set_index('RTA ID', inplace=True)
+    tmp_rta_new.sort_index(inplace=True)
     rta_year = get_rta_year(tmp_rta_new, str(YEAR), git_csvs_root)
 
     # get all RTAs in country codes
@@ -139,10 +159,12 @@ for YEAR in YEARs:
         get_country_codes_per_RTA(rta_year, rta_to_country_codes)
     rta_year_G = \
         create_rta_network(rta_country_codes_year, country_codes_per_rta_year, weighted=True)
-    rta_year_partition = get_louvain_partition(rta_year_G)
+    # rta_year_partition = get_louvain_partition(rta_year_G)
+    rta_year_partition, rta_year_communities_orig = get_louvain_orig_partition(rta_year_G)
     #%%
     fig = plot_communities_geo(rta_year_partition, iso_corr, "RTA", YEAR)
-    fig.write_image(images_root + f'rta_communities_{YEAR}.eps')  
+    if WRITE:
+        fig.write_image(images_root + f'rta_communities_{YEAR}.eps')  
 
     # %%
     # create product network
@@ -158,56 +180,97 @@ for YEAR in YEARs:
         products[products['KUSD'] > 0],
         ['Code_economy', 'Code_partner'])
     # get product communities, partition
-    product_partition = get_louvain_partition(product_G)
-    total_partition = get_louvain_partition(total_G)
+    # product_partition = get_louvain_partition(product_G)
+    # product_partition, product_communities_orig = get_louvain_orig_partition(product_G)
+    mod = -1
+    for i in range(LRN):
+        # total_partition = get_louvain_partition(total_G)
+        tmp_product_partition, tmp_product_communities_orig = get_louvain_orig_partition(product_G)
+        tmp_mod = nx.community.quality.modularity(product_G, tmp_product_communities_orig)
+        # print('tmp modularity: ', tmp_mod)
+        if mod < tmp_mod:
+            mod = tmp_mod
+            product_communities_orig = tmp_product_communities_orig
+            product_partition = tmp_product_partition
+    
+    mod = -1
+    for i in range(LRN):
+        # total_partition = get_louvain_partition(total_G)
+        tmp_total_partition, tmp_total_communities_orig = get_louvain_orig_partition(total_G)
+        tmp_mod = nx.community.modularity(total_G, tmp_total_communities_orig)
+        # print('tmp modularity: ', tmp_mod)
+        if mod < tmp_mod:
+            mod = tmp_mod
+            total_communities_orig = tmp_total_communities_orig
+            total_partition = tmp_total_partition
 
-    fig = plot_communities_geo(product_partition, iso_corr, 'Telecommunication equipment', YEAR)
-    fig.write_image(images_root + f'product_communities_{YEAR}.eps')
-    fig = plot_communities_geo(total_partition, iso_corr, 'Total', YEAR)
-    fig.write_image(images_root + f'total_communities_{YEAR}.eps')
+    fig = plot_communities_geo(product_partition, iso_corr,
+                               'Telecommunication equipment', YEAR, show=SHOW)
+    if WRITE:
+        fig.write_image(images_root + f'tele_communities_{YEAR}.eps')
+    fig = plot_communities_geo(total_partition, iso_corr,
+                               'Total', YEAR, show=SHOW)
+    if WRITE:
+        fig.write_image(images_root + f'total_communities_{YEAR}.eps')
 
     # %%
-    # get and preprocess DIST data
-    geos = pd.read_csv(csvs_root + 'geo_cepii.csv', keep_default_na=False)
-    # %%
-    # get distance between countries
-    dist_inv = pd.read_csv(git_csvs_root + 'dist_inv.csv')
-    dist_G = get_dist_network(dist_inv)
-    # get distance communities, partition
-    dist_partition = get_louvain_partition(dist_G)
-    #%%
-    if YEAR == 2017:
-        fig = plot_communities_geo(dist_partition, iso_corr, "Distance")
-        fig.write_image(images_root + 'dist_communities.eps')
-    else: 
-        pass
+    if YEAR == 2016:
+        # get and preprocess DIST data
+        # geos = pd.read_csv(csvs_root + 'geo_cepii.csv', keep_default_na=False)
+        # %%
+        # get distance between countries
+        dist_inv = pd.read_csv(git_csvs_root + 'dist_inv.csv')
+        dist_G = get_dist_network(dist_inv)
+        ## get distance communities, partition
+        # dist_partition = get_louvain_partition(dist_G)
+        # dist_partition, dist_communities_orig = get_louvain_orig_partition(dist_G)
+        mod = -1
+        for i in range(LRN):
+            # total_partition = get_louvain_partition(total_G)
+            tmp_dist_partition, tmp_dist_communities_orig = get_louvain_orig_partition(dist_G)
+            tmp_mod = nx.community.quality.modularity(dist_G, tmp_dist_communities_orig)
+            # print('tmp modularity: ', tmp_mod)
+            if mod < tmp_mod:
+                mod = tmp_mod
+                dist_communities_orig = tmp_dist_communities_orig
+                dist_partition = tmp_dist_partition
+        fig = plot_communities_geo(dist_partition, iso_corr,
+                                   "Distance", show=SHOW)
+        if WRITE:
+            fig.write_image(images_root + 'dist_communities.eps')
 
-    # %%
-    # load ALLIANCE data
-    v4 = pd.read_csv(csvs_root + 'version41_csv/alliance_v41_by_member.csv')
-    v4_to_products = pd.read_csv(git_csvs_root + 'v4_to_products.csv')
-    v4_active_new = preprocess_alliances(v4, v4_to_products)
-    alliance_lists = get_alliance_lists(v4_active_new, "Type I: Defense Pact")
-    ally_G = create_ally_network(alliance_lists, v4_active_new, weighted=True)
-    ally_G_unweighted = create_ally_network(alliance_lists, v4_active_new, weighted=False)
-    # %% 
-    # get alliance communmities
-    alliance_partition = get_louvain_partition(ally_G)
-    alliance_partition_unweighted = get_louvain_partition(ally_G_unweighted)
-    # add important countries that are not allied
-    non_allied_countries = \
-        ['HK', 'MO', 'TW', 'VN', 'SG', 'TH', 'SE', 'CH', 'ID']
-    for i, country in enumerate(non_allied_countries):
-        alliance_partition[country] = -i
-        alliance_partition_unweighted[country] = -i
-    # %%
-    if YEAR == 2017:
-        fig = plot_communities_geo(alliance_partition, iso_corr, "Alliance")
-        fig.write_image(images_root + 'alliance_communities.eps')
-        fig = plot_communities_geo(alliance_partition_unweighted, iso_corr, "Alliance")
-        fig.write_image(images_root + 'alliance_communities_unweighted.eps')
-    else:
-        pass
+        # load ALLIANCE data
+        v4 = pd.read_csv(csvs_root + 'version41_csv/alliance_v41_by_member.csv')
+        v4_to_products = pd.read_csv(git_csvs_root + 'v4_to_products.csv')
+        v4_active_new = preprocess_alliances(v4, v4_to_products)
+        alliance_lists = get_alliance_lists(v4_active_new, "Type I: Defense Pact")
+        alliance_G = create_ally_network(alliance_lists, v4_active_new, weighted=True)
+        # %% 
+        # # get alliance communmities
+        # alliance_partition = get_louvain_partition(ally_G)
+        # alliance_partition, alliance_communities_orig = \
+        #     get_louvain_orig_partition(ally_G)
+        mod = -1
+        for i in range(LRN):
+            # total_partition = get_louvain_partition(total_G)
+            tmp_alliance_partition, tmp_alliance_communities_orig = get_louvain_orig_partition(alliance_G)
+            tmp_mod = nx.community.quality.modularity(alliance_G, tmp_alliance_communities_orig)
+            # print('tmp modularity: ', tmp_mod)
+            if mod < tmp_mod:
+                mod = tmp_mod
+                alliance_communities_orig = tmp_alliance_communities_orig
+                alliance_partition = tmp_alliance_partition
+        
+        # add important countries that are not allied
+        non_allied_countries = \
+            ['HK', 'MO', 'TW', 'VN', 'SG', 'TH', 'SE', 'CH', 'ID']
+        for i, country in enumerate(non_allied_countries):
+            alliance_partition[country] = -i
+        # %%
+        fig = plot_communities_geo(alliance_partition, iso_corr,
+                                   "Alliance", show=SHOW)
+        if WRITE:
+            fig.write_image(images_root + 'alliance_communities.eps')
 
 
     # %%
@@ -300,43 +363,80 @@ for YEAR in YEARs:
     NMI_total_v_alliance.append(total_v_alliance)
 
 NMI_product_v_df = pd.DataFrame({
-    'YEAR': pd.to_datetime(YEARs, format='%Y'),
-    'NMI_product_v_rta': NMI_product_v_rta,
-    'NMI_product_v_total': NMI_product_v_total,
-    'NMI_product_v_dist': NMI_product_v_dist,
-    'NMI_product_v_alliance': NMI_product_v_alliance})
+    'YEAR': pd.Series(YEARs, dtype='str'),
+    'RTA': NMI_product_v_rta,
+    'distance': NMI_product_v_dist,
+    'alliance': NMI_product_v_alliance,
+    'total': NMI_product_v_total})
 
 NMI_total_v_df = pd.DataFrame({
-    'YEAR': pd.to_datetime(YEARs, format='%Y'),
-    'NMI_total_v_rta': NMI_total_v_rta,
-    'NMI_total_v_dist': NMI_total_v_dist,
-    'NMI_total_v_alliance': NMI_total_v_alliance})
+    'YEAR': pd.Series(YEARs, dtype='str'),
+    'RTA': NMI_total_v_rta,
+    'distance': NMI_total_v_dist,
+    'alliance': NMI_total_v_alliance})
 
 fig = px.line(
     NMI_product_v_df,
     x='YEAR',
-    y=['NMI_product_v_rta', 'NMI_product_v_total', 'NMI_product_v_dist', 'NMI_product_v_alliance'],
-    title='NMI between product and other networks',
+    y=['RTA', 'distance', 'alliance', 'total'],
+    title='NMI between telecommunication and other networks',
+    labels={'value': 'NMI'},
     markers=True,)
-if show:
+fig.update_layout(
+    legend_title_text='Communities',)
+if SHOW_NMI:
     fig.show()
-fig.write_image(images_root + 'product_v_others.eps')
+if WRITE:
+    fig.write_image(nmi_images_root + 'tele_v_others_1.eps')
+
+fig = px.line(
+    NMI_product_v_df.iloc[:4, :],
+    x='YEAR',
+    y=['RTA', 'distance', 'alliance', 'total'],
+    title='NMI between telecommunication and other networks',
+    labels={'value': 'NMI'},
+    markers=True,)
+fig.update_layout(
+    legend_title_text='Communities',)
+if SHOW_NMI:
+    fig.show()
+if WRITE:
+    fig.write_image(nmi_images_root + 'tele_v_others_2.eps')
 
 fig = px.line(
     NMI_total_v_df,
     x='YEAR',
-    y=['NMI_total_v_rta', 'NMI_total_v_dist', 'NMI_total_v_alliance'],
+    y=['RTA', 'distance', 'alliance'],
     title='NMI between total and other networks',
+    labels={'value': 'NMI'},
     markers=True,)
-if show:
+fig.update_layout(
+    legend_title_text='Communities',)
+if SHOW_NMI:
     fig.show()
-fig.write_image(images_root + 'total_v_others.eps')
+if WRITE:
+    fig.write_image(nmi_images_root + 'total_v_others_1.eps')
+
+fig = px.line(
+    NMI_total_v_df.iloc[:4, :],
+    x='YEAR',
+    y=['RTA', 'distance', 'alliance'],
+    title='NMI between total and other networks',
+    labels={'value': 'NMI'},
+    markers=True,)
+fig.update_layout(
+    legend_title_text='Communities',)
+if SHOW_NMI:
+    fig.show()
+if WRITE:
+    fig.write_image(nmi_images_root + 'total_v_others_2.eps')
+
 
 # %%
 # what are the friends of a country in each network?
-country = 'JP' 
-partner = 'CN'
-# country = False
+# country = 'JP' 
+# partner = 'CN'
+country = False
 if country:
     product_country_community = product_partition[country]
     product_country_friends = \

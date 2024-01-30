@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import normalized_mutual_info_score as NMI
 import pickle as pkl
 import itertools
+import time
 
 from warnings import filterwarnings
 filterwarnings('ignore')
@@ -26,6 +27,7 @@ only_nmis = True
 non_allied_countries = \
     ['HK', 'MO', 'TW', 'VN', 'SG', 'TH', 'SE', 'CH', 'ID']
 YEAR = 2017
+use_igraph = False
 
 # %% for loading data
 csvs_root= '../../csvs/'
@@ -69,7 +71,11 @@ def get_dist_G(csvs_root='../../csvs/', git_csvs_root='../../csvs_git/'):
     return dist_G
 # get louvain partitions
 def get_louvain_orig_partition(G):
+    start_time = time.time()
     communities_orig = nx.community.louvain_communities(G)
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print('louvain:elapsed_time: ', elapsed_time)
     communities = list(communities_orig)
     partition = dict()
     for i, community in enumerate(communities):
@@ -77,7 +83,11 @@ def get_louvain_orig_partition(G):
             partition[country] = i
     return partition, communities_orig
 def get_greedy_orig_partition(G):
+    start_time = time.time()
     communities_orig = nx.community.greedy_modularity_communities(G)
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print('greedy:elapsed_time: ', elapsed_time)
     communities = list(communities_orig)
     partition = dict()
     for i, community in enumerate(communities):
@@ -97,6 +107,8 @@ products = products.dropna(subset=['Code_economy', 'Code_partner']) # limit to c
 products = products[products['partner_label'] != products['economy_label']]
 # load and preprocess RTA data(process for each year later)
 tmp_rta_new = process_rta(csvs_root, git_csvs_root)
+tmp_rta_new.set_index('RTA ID', inplace=True)
+tmp_rta_new.sort_index(inplace=True)
 
 # %% stuff to run every year
 # PRODUCT
@@ -117,130 +129,188 @@ if YEAR == 2017:
     # DIST
     dist_G = get_dist_G(csvs_root, git_csvs_root)
 
+### %% get communities
 # %% LOUVAIN
 product_louvain_partition, product_louvain_orig = \
     get_louvain_orig_partition(product_G)
-# for each country, get the number of edges within the same community and the total number of edges out of community
-# %%
-for community in product_louvain_orig:
-    for country in community:
-        import_partners = product_G[country]
-        # as_importer = products.query('Code_economy==@country')
-        # as_exporter = products.query('Code_partner==@country')
-        # as_importer
-
-
-# %%
-
-
 product_louvain_modularity = \
     nx.community.quality.modularity(
         product_G,
         product_louvain_orig)
 fig = plot_communities_geo(product_louvain_partition, iso_corr,
-                           'Telecommunication equipment', YEAR)
+                           'Telecommunication equipment', YEAR, show=False)
 print('product_louvain_modularity: ', product_louvain_modularity)
+fig.update_layout(
+    title='Telecommunication equipment communities in 2017 (Louvain)')
+fig.show()
+
+# %% GIRVAN NEWMAN
+with open('dict_communities_orig.pkl', 'rb') as f:
+    dict_communities_orig = pkl.load(f)
+product_gn_modularity_best = max(dict_communities_orig.keys())
+best_communities_orig = dict_communities_orig[product_gn_modularity_best]
+product_gn_partition = dict()
+for i, community in enumerate(best_communities_orig):
+    for country in community:
+        product_gn_partition[country] = i
+fig = plot_communities_geo(product_gn_partition, iso_corr,
+                           'Telecommunication equipment', YEAR, show=False)
+fig.update_layout(
+    title='Telecommunication equipment communities in 2017 (Girvan Newman)')
+fig.show()
+
+# %% GREEDY
+product_greedy_partition, product_greedy_orig = \
+    get_greedy_orig_partition(product_G)
+product_greedy_modularity = \
+    nx.community.quality.modularity(
+        product_G,
+        product_greedy_orig)
+fig = plot_communities_geo(product_greedy_partition, iso_corr,
+                           'Telecommunication equipment', YEAR, show=False)
+print('product_greedy_modularity: ', product_greedy_modularity)
+fig.update_layout(
+    title='Telecommunication equipment communities in 2017 (Fastgreedy)')
 fig.show()
 
 # %%
-# IGRAPH
-# create network from product data for igraph
-# (for walktrap, maybe make weighted, undirected graph later)
-year = 2017
-product_name = '764'
-product_df = products[products['KUSD'] > 0]
-label_columns=['Code_economy', 'Code_partner']
-
-economy_label = label_columns[0]
-partner_label = label_columns[1]
-filter_product = \
-    (product_df['product']==product_name).values
-filter_year = \
-    (product_df['year']==year).values 
-product_df_cp = product_df[filter_product & filter_year]\
-    [[economy_label, partner_label, 'flow', 'KUSD']].copy()
-# create network
-g = ig.Graph(directed=True)
-
-economy_nodes = list(product_df_cp[economy_label].unique())
-partner_nodes = list(product_df_cp[partner_label].unique())
-all_nodes = list(set(economy_nodes + partner_nodes))
-g.add_vertices(all_nodes)
-
-edges = [] 
-weights = []
-for index, row in product_df_cp.iterrows():
-    flow = row['flow']
-    if flow == 1: # import
-        exporter = row[partner_label]
-        importer = row[economy_label]
-    elif flow == 2: # export
-        exporter = row[economy_label]
-        importer = row[partner_label]
-    kusd = row['KUSD']
-    edges.append((exporter, importer))
-    weights.append(kusd)
-
-g.add_edges(edges)
-g.es['weight'] = weights
-
-# Plot the graph
-layout = g.layout(layout="auto")
-# fig, ax = plt.subplots()
-ig.plot(g)
-# plt.plot(g, layout=layout, vertex_label=g.vs['name'], edge_width=g.es['weight'])
-plt.show()
-
-
-breakpoint()
-
-
-
-# using igraph
-ig_product_G = ig.Graph.from_networkx(product_G)
-ig_product_G.vs['name'] = ig_product_G.vs['_nx_name']
-# set weight from networkx graph
-ig_product_G.es['weight'] = [product_G[u][v]['weight'] for u, v in ig_product_G.get_edgelist()]
-# %%
-
-# %% get spinglass partition
-# sg_product_communities = ig_product_G.community_spinglass()
-sg_product_communities = ig_product_G.community_walktrap()
-# sg_product_communities = ig_product_G.community_edge_betweenness(clusters=40)
-
-if isinstance(sg_product_communities, ig.VertexDendrogram):
-    sg_product_communities = sg_product_communities.as_clustering()
-# sg_product_communities.membership
-# get partition
-sg_product_partition = dict()
-for i, country in enumerate(ig_product_G.vs['name']):
-    sg_product_partition[country] = sg_product_communities.membership[i]
-
-sg_modularity = sg_product_communities.modularity
-
-fig = plot_communities_geo(sg_product_partition, iso_corr,
-                           'Telecommunication equipment', YEAR)
+# plot three modularities 
+fig = px.bar(x=['Girvan Newman(200iters)','Fastgreedy','Louvain'],
+       y=[product_gn_modularity_best,
+          product_greedy_modularity,
+          product_louvain_modularity],
+         labels={'x': 'Algorithm', 'y': 'Modularity'},)
+fig.update_layout(
+    title='Modularity per algorithm')
 fig.show()
+fig.write_image("images/modularity_per_algo.eps")
+
+louvain_time =0.05050182342529297
+greedy_time = 0.2890439033508301
+gn_time = 1370.946249961853
+time_arr = np.array([gn_time, greedy_time, louvain_time])
+time_arr = time_arr/60
+fig = px.bar(x=['Girvan Newman(200iters)','Fastgreedy','Louvain'],
+             y=time_arr,
+             labels={'x': 'Algorithm', 'y': 'Time (m)'},)
+fig.update_layout(
+    title='Time per algorithm')
+fig.show()
+fig.write_image("images/time_per_algo.eps")
 
 
-print(f'louvain:',product_louvain_modularity)
-print(f'spinglass:',sg_modularity)
-print(f'spinglass > louvain:',sg_modularity > product_louvain_modularity)
 
 
-# # %%
-# ig_total_G = ig.Graph.from_networkx(total_G)
-# ig_rta_year_G = ig.Graph.from_networkx(rta_year_G)
-# ig_alliance_G = ig.Graph.from_networkx(ally_G)
-# ig_dist_G = ig.Graph.from_networkx(dist_G)
 
-# # %%
-# total_partition, total_partition_orig = get_louvain_orig_partition(total_G)
-# rta_year_partition, rta_partition_orig = get_louvain_orig_partition(rta_year_G)
-# alliance_partition, alliance_partition_orig = get_louvain_orig_partition(ally_G)
-# for i, country in enumerate(non_allied_countries):
-#     alliance_partition[country] = -i
-#     alliance_partition_orig.append({country})
-# dist_partition, dist_partition_orig  = get_louvain_orig_partition(dist_G)
 
-# %%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+if use_igraph:
+    # IGRAPH
+    # create network from product data for igraph
+    # (for walktrap, maybe make weighted, undirected graph later)
+    year = 2017
+    product_name = '764'
+    product_df = products[products['KUSD'] > 0]
+    label_columns=['Code_economy', 'Code_partner']
+
+    economy_label = label_columns[0]
+    partner_label = label_columns[1]
+    filter_product = \
+        (product_df['product']==product_name).values
+    filter_year = \
+        (product_df['year']==year).values 
+    product_df_cp = product_df[filter_product & filter_year]\
+        [[economy_label, partner_label, 'flow', 'KUSD']].copy()
+    # create network
+    g = ig.Graph(directed=True)
+
+    economy_nodes = list(product_df_cp[economy_label].unique())
+    partner_nodes = list(product_df_cp[partner_label].unique())
+    all_nodes = list(set(economy_nodes + partner_nodes))
+    g.add_vertices(all_nodes)
+
+    edges = [] 
+    weights = []
+    for index, row in product_df_cp.iterrows():
+        flow = row['flow']
+        if flow == 1: # import
+            exporter = row[partner_label]
+            importer = row[economy_label]
+        elif flow == 2: # export
+            exporter = row[economy_label]
+            importer = row[partner_label]
+        kusd = row['KUSD']
+        edges.append((exporter, importer))
+        weights.append(kusd)
+
+    g.add_edges(edges)
+    g.es['weight'] = weights
+
+    # Plot the graph
+    layout = g.layout(layout="auto")
+    # fig, ax = plt.subplots()
+    ig.plot(g)
+    # plt.plot(g, layout=layout, vertex_label=g.vs['name'], edge_width=g.es['weight'])
+    plt.show()
+    breakpoint()
+
+    # %% USING IGRAPH FROM NETWORKX
+    ig_product_G = ig.Graph.from_networkx(product_G)
+    ig_product_G.vs['name'] = ig_product_G.vs['_nx_name']
+    # set weight from networkx graph
+    ig_product_G.es['weight'] = [product_G[u][v]['weight'] for u, v in ig_product_G.get_edgelist()]
+    # %% get spinglass partition
+    algo_product_communities = ig_product_G.community_spinglass()
+    # algo_product_communities = ig_product_G.community_walktrap()
+    # algo_product_communities = ig_product_G.community_edge_betweenness(clusters=40)
+
+    if isinstance(algo_product_communities, ig.VertexDendrogram):
+        algo_product_communities = algo_product_communities.as_clustering()
+    # algo_product_communities.membership
+    # get partition
+    algo_product_partition = dict()
+    for i, country in enumerate(ig_product_G.vs['name']):
+        algo_product_partition[country] = algo_product_communities.membership[i]
+
+    algo_modularity = algo_product_communities.modularity
+
+    fig = plot_communities_geo(algo_product_partition, iso_corr,
+                            'Telecommunication equipment', YEAR)
+    fig.show()
+
+    print(f'louvain:',product_louvain_modularity)
+    print(f'spinglass:',algo_modularity)
+    print(f'spinglass > louvain:',algo_modularity > product_louvain_modularity)

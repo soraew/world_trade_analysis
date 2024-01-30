@@ -250,6 +250,7 @@ if __name__ == '__main__':
     rta_19 = get_rta_year(tmp_rta_new, '2020')
     rta_20 = get_rta_year(tmp_rta_new, '2019')
     rta_21 = get_rta_year(tmp_rta_new, '2021')
+    breakpoint()
 
     print('Samoa' in rta_19.at[131, 'Current signatories'])
 

@@ -210,3 +210,46 @@ def get_louvain_partition(G):
         for country in community:
             partition[country] = i
     return partition
+
+def plot_communities_geo(
+        product_partition,
+        iso_corr,
+        TYPE='Telecommunication equipment',
+        YEAR=2017,
+        show=False):
+    comms = set(product_partition.values())
+    ncomms = len(comms)
+    tmp = pd.DataFrame(columns=['iso2', 'community'])
+
+    # list of list of country codes
+    for comm in comms:
+        sublist = \
+            [code for code in product_partition.keys() if \
+                product_partition[code] == comm]
+        community_arr = [str(comm)] * len(sublist)
+        tmp_tmp = pd.DataFrame({'iso2': sublist, 'community': community_arr})
+        tmp = pd.concat([tmp, tmp_tmp], axis=0)
+
+    # merge iso2 and iso3
+    tmp = pd.merge(tmp, iso_corr, on='iso2', how='left')
+    fig = px.choropleth(
+        locations=tmp['iso3'],
+        color=tmp['community'],
+        color_discrete_sequence=px.colors.qualitative.Set1[:ncomms],
+        locationmode='ISO-3',)
+    if TYPE=='Telecommunication equipment' or TYPE=='RTA' or TYPE=='Total' and YEAR:
+        title = f'{TYPE} communities in {YEAR}'
+    else:
+        title = f'{TYPE} communities'
+    fig.update_layout(
+        title_text=title,
+        legend_title_text='community',
+        geo=dict(
+            showframe=False,
+            showcoastlines=False,
+            projection_type='equirectangular'),
+        margin={'b':0}
+        )
+    if show:
+        fig.show()
+    return fig

@@ -5,6 +5,7 @@ from sklearn.metrics import normalized_mutual_info_score as NMI
 import igraph as ig
 import pickle as pkl
 import itertools
+import time
 
 from warnings import filterwarnings
 filterwarnings('ignore')
@@ -23,6 +24,7 @@ only_nmis = True
 non_allied_countries = \
     ['HK', 'MO', 'TW', 'VN', 'SG', 'TH', 'SE', 'CH', 'ID']
 YEAR = 2017
+run_GN = False
 
 # %% for loading data
 csvs_root= '../../csvs/'
@@ -125,98 +127,69 @@ def get_gn_orig_partition(G):
         for country in community:
             partition[country] = i
     return partition, communities_orig_normalized
+
 # %% DEBUG GN
-G = product_G.copy()
-communities_orig = nx.community.girvan_newman(G)
-communities_orig_normalized = []
-# tmp_communities_orig = next(communities_orig)
-max_iter = 200
-old_mod = -1
-modularities = []
-for i, tmp_communities_orig in enumerate(communities_orig):
-    if i > max_iter:
-        break
-    else:
-        print(i, end=' ')
-        modularities.append(new_mod)
-        communities_orig_normalized.append(tmp_communities_orig)
-        new_mod = nx.community.quality.modularity(
-            G, tmp_communities_orig)
-        if new_mod > old_mod:
-            print(f'new modularity for gn: {new_mod}')
-            old_mod = new_mod
-            communities_orig = tmp_communities_orig
+if run_GN:
+    G = product_G.copy()
+    communities_orig = nx.community.girvan_newman(G)
+    dict_communities_orig = {}
+    # tmp_communities_orig = next(communities_orig)
+    max_iter = 200
+    new_mod = -1
+    modularities = []
+    start_time = time.time()
+    for i, tmp_communities_orig in enumerate(communities_orig):
+        if i > max_iter:
+            break
+        elif new_mod > 0.18:
+            break
+        else:
+            if i%10 == 0:
+                print(i, end=' ')
+            tmp_mod = nx.community.quality.modularity(
+                G, tmp_communities_orig)
+            modularities.append(tmp_mod)
+            if tmp_mod > new_mod:
+                print(f'new modularity for gn: {tmp_mod}')
+                new_mod = tmp_mod
+                dict_communities_orig.update({new_mod:tmp_communities_orig})
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print(f'elapsed time: {elapsed_time} seconds')
+    with open('dict_communities_orig_2.pkl', 'wb') as f:
+        pkl.dump(dict_communities_orig, f)
+    with open('modularities_2.pkl', 'wb') as f:
+        pkl.dump(modularities, f)
 
-
-
-# %%
-communities_orig_normalized = []
-for community in tmp_communities_orig:
-    print('gn')
-    communities_orig_normalized.append(community)
-communities = list(communities_orig)
-partition = dict()
-for i, community in enumerate(communities):
+# %% plot communities
+with open('dict_communities_orig.pkl', 'rb') as f:
+    dict_communities_orig = pkl.load(f)
+best_mod = max(dict_communities_orig.keys())
+best_communities_orig = dict_communities_orig[best_mod]
+product_gn_partition = dict()
+for i, community in enumerate(best_communities_orig):
     for country in community:
-        partition[country] = i
-fig = plot_communities_geo(partition, iso_corr,
-                            'Telecommunication equipment', YEAR)
+        product_gn_partition[country] = i
+fig = plot_communities_geo(product_gn_partition, iso_corr, show=True)
+# fig.write_image('images/product_gn_partition.eps')
+
+# %% plot modularities
+with open('modularities.pkl', 'rb') as f:
+    modularities = pkl.load(f)
+fig = px.line(
+    x=range(len(modularities)),
+    y=modularities,
+    title='Modularity score of Girvan Newman algorithm')
+fig.update_layout(
+    xaxis_title='Iteration',
+    yaxis_title='Modularity')
 fig.show()
-# %%
 
-louvain_product_partition, louvain_product_orig = get_louvain_orig_partition(product_G)
-gn_product_partition, gn_product_orig = get_gn_orig_partition(product_G)
-fig = plot_communities_geo(louvain_product_partition, iso_corr,
-                           'Telecommunication equipment', YEAR)
-fig.show()
-fig = plot_communities_geo(gn_product_partition, iso_corr,
-                           'Telecommunication equipment', YEAR)
-fig.show()
-breakpoint()
-
-# using igraph
-ig_product_G = ig.Graph.from_networkx(product_G)
-ig_product_G.vs['name'] = ig_product_G.vs['_nx_name']
-
-# %% get spinglass partition
-# sg_product_communities = ig_product_G.community_spinglass()
-sg_product_communities = ig_product_G.community_walktrap()
-# sg_product_communities = ig_product_G.community_edge_betweenness(clusters=40)
-if isinstance(sg_product_communities, ig.VertexDendrogram):
-    sg_product_communities = sg_product_communities.as_clustering()
-# %%
-sg_product_communities.membership
-print(type(sg_product_communities))
-# get partition
-sg_product_partition = dict()
-for i, country in enumerate(ig_product_G.vs['name']):
-    sg_product_partition[country] = sg_product_communities.membership[i]
-fig = plot_communities_geo(sg_product_partition, iso_corr,
-                           'Telecommunication equipment', YEAR)
-fig.show()
-product_modularity = \
-    nx.community.quality.modularity(
-        product_G,
-        louvain_product_orig)
-sg_modularity = sg_product_communities.modularity
-print(f'louvain:',product_modularity)
-print(f'spinglass:',sg_modularity)
-print(f'spinglass > louvain:',sg_modularity > product_modularity)
+fig.write_image('images/modularities.eps')
 
 
-# # %%
-# ig_total_G = ig.Graph.from_networkx(total_G)
-# ig_rta_year_G = ig.Graph.from_networkx(rta_year_G)
-# ig_alliance_G = ig.Graph.from_networkx(ally_G)
-# ig_dist_G = ig.Graph.from_networkx(dist_G)
 
-# # %%
-# total_partition, total_partition_orig = get_louvain_orig_partition(total_G)
-# rta_year_partition, rta_partition_orig = get_louvain_orig_partition(rta_year_G)
-# alliance_partition, alliance_partition_orig = get_louvain_orig_partition(ally_G)
-# for i, country in enumerate(non_allied_countries):
-#     alliance_partition[country] = -i
-#     alliance_partition_orig.append({country})
-# dist_partition, dist_partition_orig  = get_louvain_orig_partition(dist_G)
 
-# %%
+
+
+
