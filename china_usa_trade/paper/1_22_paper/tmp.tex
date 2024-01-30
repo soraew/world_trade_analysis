@@ -1,0 +1,470 @@
+\documentclass[a4paper, 12pt]{article}
+
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{enumerate}
+\usepackage{graphicx}
+% % for drawing network
+% \usepackage{tikz}
+% % for figures
+\usepackage[]{caption}
+% \usetikzlibrary{automata, arrows.meta, positioning}
+% % this is new from NN2
+\usepackage[]{float}
+
+% \graphicspath{{./images/}}
+
+% \setcounter{secnumdepth}{2}
+% layout params
+\setlength{\topmargin}{-1mm}
+\setlength{\headheight}{0mm}
+\setlength{\headsep}{0mm}
+\setlength{\oddsidemargin}{2mm}
+\setlength{\evensidemargin}{2mm}
+\setlength{\textheight}{244mm}
+\setlength{\textwidth}{160mm}
+\setlength{\footskip}{16mm}
+% 節番号のスタイルを 1.1, 1.2, 2.1 といった形に設定する
+\renewcommand{\thesection}{\arabic{section}}
+\renewcommand{\thesubsection}{\arabic{section}.\arabic{subsection}}
+% 式番号のスタイル
+% 各節ごと番号を (1.1), (1.2), (2.1), (2.2) というように付けるスタイル
+% このコマンド列をコメントアウトすると (1), (2), (3), (4) という通し番号になる
+\makeatletter
+\@addtoreset{equation}{section}
+\makeatother
+\renewcommand{\theequation}{\arabic{section}.\arabic{equation}}
+%
+%
+\title{Network analysis of the US-China trade war}
+\author{Ward Sora}
+\date{\today}
+%
+\begin{document}
+%
+% Title Page
+\maketitle
+
+%
+\newpage
+% Abstract
+\section*{Abstract}
+The US-China trade war since 2018 has had a major impact on the world economy.
+However, most research on this topic has focused on the magnitude of the effect and not much on it's characteristic and how the relationship between countries has changed.
+I employ a complex network approach for the time frame 2017-2019 to study the change in characteristic of the world trade network of one of the product categories (Telecommunication equipment) that had the most impact due to tariffs in the early years of the trade war.
+I find that the communities in the world trade network has followed a pattern similar to the communities in the world RTA network.
+Suggesting that in times of shock, the way in which countries connect to each other differ from when there aren't major shocks in the network.
+% I also show that the relationship between countries within the same community has changed, mainly the rise in Vietnam's network power.
+\newpage
+%
+% Table of Contents (third page)
+\tableofcontents
+\newpage
+%
+% Rest of the document
+% Introduction 
+\section{Introduction}
+
+\subsection{Background}
+
+\subsubsection{US-China Trade War}
+The US-China trade war since 2018 has had a major impact on the world economy, since the US and China are the top two economies in the world by GDP, and their bilateral trade accounts for X\% of all trade in the world.
+Hence, Understanding how the trade war has affected the world economy has been a hot topic of econommic research.
+Here I will briefly overview how the events in the early years of the trade war has taken place.
+\par
+In March 2018, the US imposed tariffs on steel and aluminum imports from all countries, including China.
+In April 2018, China retaliated by imposing tariffs on 128 products imported from the US.
+In July 2018, the US imposed tariffs on \$34 billion worth of Chinese goods, and China retaliated with tariffs on \$34 billion worth of US goods.
+In September 2018, the US imposed tariffs on \$200 billion worth of Chinese goods, and China retaliated with tariffs on \$60 billion worth of US goods.
+
+\subsubsection{Political networks}
+Trade has different dimensions, and implicatoins for a country.
+A soft political dimension is the relationship between countries in Regional Trade Agreements (RTAs).
+A harder political dimensiton is the relationship between countries in political-military alliances.
+To understand the characteristic of the US-China trade war and its impact on the world economy, it is important to understand how the world trade network has changed.
+
+% 
+\subsection{Literature Review}
+
+\subsubsection{Trade War}
+Two avenues of research regarding the US-China Trade War has been identified in the literature.
+These are: 
+\begin{enumerate}[(i)]
+\item Estimating the impact on a country
+\item Estimating trade diversion impacts
+\end{enumerate}
+Most research has largely focused on (i). The second avenue of research is closer to the author's purpose, which is to study the characteristic of the trade war.
+In the following, I will briefly overview the literature in each of these avenues.
+\paragraph{Estimating the impact on a country}
+Most studies in this avenue follow a similar approach, which is to apply a general equilibrium model to estimate the impact of the trade war.
+Balisteri et al.(2018)\cite{balistreri2018} use a Computable General Equilibruim (CGE) model estimating a loss in GDP in the order of -1.02\% and -1.7\% for the US and China, respectively.
+Similaryly, Itakura(2020)\cite{Itakura2020} supposes three scenarios of the trade war. They then use a CGE model to estimate the effect at 2035 on each of these scenarios. The estimations are compared against a baseline derived from the United Nation’s outlook for US and China in 2035 respectively. They find a GDP loss for the US to be -0.3\% to -1.4\% and for China to be -1.4\% to -1.7\%.
+Amiti et al.\cite{Amiti2019} also use an equilibrium based model to estimate the impact of the trade war on welfare, analyzing the price burden on consumers and taxpayers in the US. 
+They find that US import tariffs were almost completely passed through into US domestic prices in 2018, with the entire incidence of tariffs falling on US consumers and importers.
+Purwono et al.\cite{purwono2021} use network analysis to trace the impact of US-China tariffs on their asian partners transmitted via the production network.
+They suppose a 25 percent bilateral tariff scenario, finding that China’s biggest intermediate importers, Japan and South Korea, will suffer the biggest losses due to the decline in sales of Chinese manufacturing goods.
+\paragraph{Estimating trade diversion effects}
+Trade diversion is when a trade flow from a country switches to another. 
+Trade diversion has historically been studied with trade creation as its counterpart, in the context of regional trade agreements. 
+The methodology used in the literature differs from paper to paper.\par
+In regards to the US-China trade war,
+Cigna et al.(2022)\cite{cigna2022} employ a Difference-In-Difference estimation on data from 2017-2019, finding a strong negative effect of US tariffs on US imports from China, but no evidence for significant trade diversion effects towards third countries.
+Contrary to these findings, Fajgelbaum et al.(2021)\cite{fajgelbaum2021} employ a Richardian-Armington trade model and find that third countries which exports substitute Chinese exports experience a higher rate of exports to the US  in the post-trade war period compared to pre-trade war period, suggesting significant trade diversion effects to these countries.\par
+Kim et al.(2021)\cite{kim2021} employ network analysis on the mobile phone network and its intermediate goods network in the timeframe 2017-2019.
+They find that China's out-degree centrality decreased slightly, while Vietnam's role expanded.
+They also find that although China’s direct exports to the US have decreased significantly, indirect exports to the US have increased, but with China not playing a central role in the indirect network.
+
+\subsubsection{Regional Trade Agreements}
+A regional trade agreement (RTA) is a preferential trade agreement between two or more countries that aims to reduce or eliminate trade barriers among the member countries. 
+Much of the research behind RTAs have been on their trade creation and trade diversion impacts. 
+However, some research has been done to show the similarity between the RTA network and world trade network.
+Reyes et al.(2014)\cite{reyes2014} employ a network analysis on data in the period 1970-2000 and find periods when world trade flows are consistent with RTA community structure.
+They find consistency during 80-86, 90-96 and inconsistency during 86-90, 97-00.
+Barigozzi et al.(2011)\cite{barigozzi2011} also employ network analysis, but on more recent data (1992-2003) and compare RTA network communities along geographic communities with the world trade network communities.
+They find more similarity between trade communities and geographic communities than with RTA communities.
+
+\subsubsection{Military Alliances}
+Since governments align trade policies with national security concerns, there has been a substantial body of research studying the relationship between military alliances and trade.
+Gowa et al.(1993)\cite{gowa1993} finds in their seminal work, that free trade is more likely within, rather than across political-military alliances, and that alliances are more likely to evolve into free-trade coalitions if they are embedded in bipolar systems than in multipolar systems.
+finds that political alliances facilitate international trade while political tensions result in trade restrictions.
+Haim et al.(2016)\cite{haim2016} employ a network analytical approach and find that higher levels of trade result when states have more shared alliances and when they are in the same alliance community.
+
+\subsubsection{Distance}
+One of the most empirically robust findings in the research on trade has been the relationship between trade flows and geographical distance.
+The gravity model uses distance as a proxy for transportation costs of goods, and is one of the most widely used economic models regarding trade. 
+Brun et al.(2005)\cite{brun2005} find this relationship overall still holds even with transportation costs declining for intra-developed nation’s trade flows.
+Camison et al.(2020)\cite{camison2020} also supports this view with more recent data.
+
+
+\subsection{Research Gap}
+Despite Intensive research in estimating the impact of the US-China trade war, there has been little research comparing its political externalities (i.e. RTAs and alliances) with trade flows.
+There have also been few studies in comparing trade and its political externalities in times of crises and heightened nationalism/resentment towards other countries.
+One of these studies is the recent work by Coi(2023)\cite{Coi2023} which finds that when national security interests of nationalist leaders collide with global economic interests, the former prevail over the latter in the context of low-level conflict.
+
+To fill this gap in literature, I employ a network analytical approach first implemented by Barigozzi(2011)\cite{barigozzi2011} on the telecommunication equipment trade network and political networks; the RTA network and Alliance network.
+Telecommunication equipment has been one of the categories that has been hit hard with high tariff rates from the US, with tariff rates reaching an additional 25\% in May 2019.
+China is the world’s biggest exporter of telecommunication equipment, and the US is the world’s biggest Importer, which represents their characteristic in world trade.
+Furthermore, telecommunication equipment is a product category with strategic value.
+To assess the difference with other product categories, I compare the telecommunication equipment network against the product network including telecommunication equipment.
+To assess the difference between the non-political aspects of trade (transportation costs),  I compare the distance network of countries to the telecommunication equipment network.
+
+\newpage
+
+\section{Data and Methods}
+
+\subsection{Data}
+
+\subsubsection{Trade}
+
+I employ bilateral trade flows data from the BACI dataset of CEPII\cite{CEPII}.
+The BACI dataset is constructed from the UN Comtrade database, which is the de facto standard in the literature.
+For the first analysis, to compare the post-trade war trends with the pre-trade war trends, I use the data from 2016-2019, excluding data from 2020 onward to avoid the impact caused by the Covid-19 global pandemic.
+For the second analysis, I use data from 2016-2021, taking into consideration the effects of the Covid-19 pandemic.
+
+\subsubsection{RTA}
+I employ data about regional trade agreements (RTAs) between world countries from the World Trade Organization website\cite{RTA}.
+I build a weighted undirected network with the weight of each edge being the number of RTAs in place between two countries.
+This allows us to represent the strength of ties in the RTA network.
+For each year between 2016-2021, exiting members/inactivated RTAs are dropped and entering members/activated RTAs are added.
+
+\subsubsection{Distance}
+Distance data is obtained from the CEPII website\cite{CEPII}.
+I build a weighted undirected network with weights $s_{ij} = d_{ij}^{-1}$, where $d_{ij}^{-1}$ is the geographical distance between the center of population between the largest cities in country i and j.
+This inversion allows us to express the closeness between countries, which is used as a proxy for how cheap the transport cost between countries can be.
+
+\subsubsection{Military Alliances}
+Alliance data is obtained from the Formal Alliances dataset of the Correlates of War project\cite{COW}.
+Only Alliances of the strongest kind, i.e. defence pacts are taken into consideration.
+Although the data is only until 2012, I manually add new alliances that are mutual defence pacts\cite{Franco-Greek}.
+% since there hasn't been any new mutual defence pacts formed in 2012-2019, I use this data for all years in 2016-2021.
+I build a weighted undirected network with the weight of each edge being the number of Alliances in place between two countries.
+This allows us to represent the strength of ties in the Alliance network.
+\newpage
+\subsection{Community detection}
+Detecting community structures in complex networks has been one of the common ways of understanding the properties of a network. 
+This is true for trade networks, too, and there have been numerous articles studying the different communities within trade(\cite{torreggiani2018identifying}, \cite{barigozzi2011}).
+% However, deciding the criteria on which to assign a community to nodes in a network is not easy.
+Below, I will give an overview of some of the most used algorithms implemented in the networkx\cite{hagberg2008exploring} package for detecting communities in complex networks.\par
+Girvan \& Newman(2002) \cite{girvan2002} proposed to use edge-betweenness to find edges between communities.
+Their algorithm, known as the Girvan-Newman algorithm follows the steps below.
+\begin{enumerate}
+    \item for graph $G$, define community numbers $N_{CM}$
+    \item compute edge-betweenness for each edge in $G$
+    \item remove edge with maximum edge-betweenness to get graph $G'$
+    \item compute edge-betweenness for each edge in $G'$
+    \item repeat steps 3 and 4 until there are $N_{CM}$ communities
+\end{enumerate}
+The Girvan-Newman algorithm's computational complexity is $O(E^2N)$, and is known to be slow and limiting for large networks\cite{yang2016comparative}.\par
+Girvan \& Newman(2004)\cite{newman2004finding} proposed modularity as a criterion on which to detect communities, and has become the most widely used community detection criterion ever since.
+In modularity-based methods, the objective is to maximize modularity which is defined as
+\begin{equation}
+    Q = \sum_i{(e_{ij} - a_i^2)}
+\end{equation}
+Where $e_ij$ is the number of links with one end in group i and other in group j while $a_i = \sum_i{e_{ij}}$ is the number of links with one end in group i.
+This has been extended to weighted-directed networks\cite{arenas2007} and is defined as
+\begin{equation}
+    Q = \frac{1}{W}\sum_{ij}{\left[(w_{ij} - \frac{w_i^{in}w_j^{out}}{W})\right]}\delta(C_i, C_j)
+\end{equation}
+Where $w_{ij}$ is the weight of the link between nodes $i$ and $j$, while $w_i^{out} = \sum_j{w_{ij}}$ and $w_j^{in} = \sum_i{w_{ij}}$ are respectively the output and input strengths of nodes $i$ and $j$, and $W=\sum_i{\sum_j{w_{ij}}}$ is the total strength of the network.
+The Kronecker delta function $\delta(C_i, C_j)$ takes the value 1 if nodes $i$ and $j$ are in the same community and 0 if they are not.\par
+Clauset et al.(2004)\cite{clauset2004finding} proposed a greedy algorithm maximizing modularity known as the Fastgreedy algorithm.
+The Fastgreedy algorithm follows the steps below.
+\begin{enumerate}
+    \item each node in graph $G$ is assigned a distinct community
+    \item for each pair of communities in $G$, choose a community pair that gives the maximum improvement of modularity and merge them into a new community
+    \item repeat the steps above until no community pair merge leads to an increase in modularity
+\end{enumerate}
+The computational complexity of this algorithm for hierarchical, sparse networks is $O(N\log
+ ^2N)$\cite{yang2016comparative}.
+Blondel et al.\cite{blondel2008} proposed a different greedy algorithm maximizing modularity known as the Louvain algorithm.
+The Louvain algorithm follows the steps below.
+\begin{enumerate}
+    \item each node in graph $G$ is assigned a distinct community
+    \item a node is moved to the community of one of its neighbours with which it achieves the highest positive contributioin to modularity.
+    \item repeat the steps above until no community pair merge leads to an increase in modularity
+\end{enumerate}
+The Louvain algorithm is known to be fast, with computational complexity $O(N\log N)$\cite{yang2016comparative}.\par
+To decide which algorithm to use for my analysis, I conducted a simple test comparing modularity and computation time for the trade network of telecommunication equipment in 2017.\par
+Firstly, I compare the time to run each algorithms.
+Because there is no prior knowledge as to how many communities exist for the network, I don't specify $N_{CM}$ when running the Girvan-Newman algorithm.
+Rather, I let the Girvan-Newman algorithm run for 200 iterations, which is 20 shy of all countries in the network.
+As seen in Figure \ref{fig:time_per_algo}, Girvan-Newman took the most time to compute at 22 minutes, and the others took less than a second to run.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth, trim={0 1cm 0 1.0cm}, clip]{1_22_paper/images/time_per_algo.eps}
+    \caption{Time(minutes) per algorithm}
+    \label{fig:time_per_algo}
+\end{figure}
+Next, I compare the modularity of each partitions generated by the algorithms.
+As seen in Figure \ref{fig:mod_per_algo}, the Louvain algorithm had the  biggest modularity of them all, by a large margin.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth, trim={0 1cm 0 1.0cm}, clip]{1_22_paper/images/modularity_per_algo.eps}
+    \caption{Modularity per algorithm}
+    \label{fig:mod_per_algo}
+\end{figure}
+% I check the results of each algorithm in a map here.
+Based on this simple benchmark, It is clear that the Louvain algorithm runs quickly and with good partitions.
+Therefore, I use the Louvain algorithm for detectin communities in all the networks I use.
+
+% \begin{figure}
+%     \centering
+%     \includegraphics[width=0.8\linewidth]{1_22_paper/images/louvain.eps}
+%     \caption{Louvain algorithm}
+%     \label{fig:louvain}
+% \end{figure}
+
+
+
+I use the Louvain community detection algorithm to detect communities in all networks I compare.
+\newpage
+
+\subsection{Comparing communities}
+To compare the communities in each network, I use the Normalized Mutual Information(NMI) measure.
+To define the NMI index, we introduce a confusion matrix.
+Given two community partitions $P_A$ and $P_B$, the confusion matrix$\textbf{N}$ is defined as a matrix whose rows correspond to the communities in $P_A$, and columns correspomd to the communities in $P_B$.
+The element of $\textbf{N}$, $N_{ij}$ is the number of nodes in the community $i$ of partition $P_A$ that appear in the community $j$ of the partition $P_B$.
+The NMI is defined as:
+\begin{equation*}
+    \text{NMI}(P_A, P_B) =
+        \frac{
+            -2\sum_{i=1}^{C_A}\sum_{j=1}^{C_B}
+            {N_{ij}log\left(
+                \frac{N_{ij}N}{N_iN_{.j}}
+                \right)}
+            }
+            {\sum_{i=1}^{C_A}N_{i.}
+                log\left(
+                    \frac{N_{i.}}{N}
+                    \right)
+                +
+                \sum_{j=1}^{C_B}N_{.j}
+                log\left(
+                    \frac{N_{.j}}{N}
+                    \right)
+            }
+\end{equation*}
+where $C_A$ and $C_B$ are respectively the number of communities in $P_A$ and $P_B$,  $N_{i.} = \sum_j{N_{ij}}$, $ N_{.j} = \sum_i{N_{ij}}$ and $N = \sum_i\sum_j{N_{ij}}$.
+The NMI index is equal to 1 if $P_A$ and $P_B$ are identical and is equal to 0 if $P_A$ and $P_B$ are independent.
+
+\newpage
+
+\section{Networks}
+\subsection{Product Network}
+\subsubsection{Analysis1: Impact of US-China trade war pre-2020}
+Firstly, to see how much trade has changed between the pre-trade war years and post-trade war years, we compare total imports and telecommunication equipment imports to the US for every year in 2016-2019.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth, trim={0 1cm 0 0.5cm}, clip]{1_22_paper/images/imports_top5_TOTAL.eps}
+    \caption{Total products}
+    \label{fig:total_top5}
+\end{figure}
+As seen in Figure \ref{fig:total_top5}, the US's biggest importer is China, even after a year the trade war was initiated.
+However, we see a sharp dip in import values compared with the other countries, which can be attributed to the US-China trade war's high protectionist measures against Chinese goods.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth, trim={0 1cm 0 0.5cm}, clip]{1_22_paper/images/imports_top5_764.eps}
+    \caption{Telecommunication equipment}
+    \label{fig:764_top5}
+\end{figure}
+As seen in Figure \ref{fig:764_top5}, China is by far the biggest exporter of Telecommunication equipment to the US.
+However, contrary to the total, we can see a clear stagnation in Imports from China in 2018.
+This may be due to the fact that tariffs hit immediately for this product category.
+Also, we can see a sharp increase with Imports form Vietnam after 2018.\par
+This may be because unlike China, Vietnam didn't suffer from high tariff rates from the US which reflects the results in Fajgelbaum et al.(2021)\cite{fajgelbaum2021}.\par
+Figure \ref{fig:total_comm_2017} displays communities of total trade in the world trade network in 2017 by color.
+Figure \ref{fig:total_comm_2019} also displays total trade but in 2019. 
+In both figures, we can Identify 5 main communities; 
+(i)Middle and North American community, (ii)European community(excluding Russia), (iii)Post-Soviet community, (iv)India, Middle-east and sub-Saharan Africa community, (v)East-Asia, South-east Asia, Oceania and South America community.
+Between 2017 and 2019, the only change in the community structure is the split of communities in sub-Saharan Africa.
+This 
+
+
+Figure \ref{fig:764_comm_2017} and Figure \ref{fig:764_comm_2019} display communities of telecommunication equipment trade in the world trade network in 2017, and 2019, respectively.
+By comparing Figure \ref{fig:764_comm_2017} and Figure \ref{fig:total_comm_2017}, we can see that unlike in the case of total product communities, telecommunication equipment communities are more fragmented in East and South-East Asia.
+Additionaly, we can see that 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth, trim={0 2cm 0 0.5cm}, clip]{1_22_paper/images/communities/total_communities_2017.eps}
+    \caption{}
+    \label{fig:total_comm_2017}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth, trim={0 2cm 0 0.5cm}, clip]{1_22_paper/images/communities/total_communities_2019.eps}
+    \caption{}
+    \label{fig:total_comm_2019}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth, trim={0 2cm 0 0.5cm}, clip]{1_22_paper/images/communities/product_communities_2017.eps}
+    \caption{}
+    \label{fig:764_comm_2017}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth, trim={0 2cm 0 0.5cm}, clip]{1_22_paper/images/communities/product_communities_2019.eps}
+    \caption{}
+    \label{fig:764_comm_2019}
+\end{figure}
+%
+\newpage
+\subsubsection{Analysis2: Post Covid19 analysis}
+Next, to see how trade has changed since the Covid-19 pandemic compared to the pre-pandemic years, we compare total imports and telecommunication equipment imports to the US for every year in our data(2016-2021).
+As seen in Figure\ref{fig:top5_total_2}, China remains the US's biggest supplier, with a large increase in total trade in 2021.
+This sudden increase in imports from China may be a result of the US-China trade war reaching a agreement in January 2020 to stop raising tariffs on each other(Phase One trade deal).
+Other reasons for this rise may be deteriorating tariff lines and rise in consumer demand.
+Some tariff lines deteriorate due to the exclusionary process of products targeted by tariffs by corporations in the US, and consumer demand for electronics had risen in the Covid-19 pandemic due to lockdown\cite{bown2022four}.
+However, the gap between China and other countries has dropped since 2018, and has remained this way even when China's exports to the US has increased in 2021.
+This is a sign of the US-China trade war's long-term effects on it's trading partners.
+Moreover, Mexico has the biggest rise in exports between 2016-2019, which confirms the results of Fajgelbaum et al.(2021)\cite{fajgelbaum2021}.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth, trim={0 1cm 0 0.5cm}, clip]{1_22_paper/images/imports_top5_TOTAL_2.eps}
+    \caption{Total products}
+    \label{fig:top5_total_2}
+\end{figure}
+Regarding telecommunication equipment trade, we can see in Figure\ref{fig:top5_764_2} the same pattern with imports from China, with a sharp rise in 2021.
+However, Unlike in the case of total prodcuts, the largest beneficiary is not Mexico but Vietnam, and it's exports to the US didn't drop even in 2020, when the growth rate of global trade flows dropped significantly\cite{unctad2021key}.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth, trim={0 1cm 0 0.5cm}, clip]{1_22_paper/images/imports_top5_764_2.eps}
+    \caption{Telecommunication equipment}
+    \label{fig:top5_764_2}
+\end{figure}
+
+\newpage
+\subsection{Military Alliance Network}
+For comparing networks later, I have added Singapore, Hong Kong, Macao, Taiwan, Vietnam, Indonesia, Thai, Sweden and Switzerland to the data, and set their communities labels as distinct from others.
+The military alliance network's communities are shown in Figure\ref{fig:alliance_comm} below.
+For clarity, I have set the communities that have only one country in red.
+We can clearly see the "Western bloc", i.e. NATO \& the US-led alliance community, which also includes Japan, Australia and the Philippines, strategically circling China.
+We can also see the "Eastern bloc", i.e. the post-Soviet, Russia-led alliance community.
+Contrary to the US and Russia, the only community China is in is with North Korea, since China has no other military alliance partner.
+Other communities are the South American community, west-African community, central African community, and a Middle East-North African community.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth, trim={0 2cm 0 0.5cm}, clip]{1_22_paper/images/communities/alliance_communities.eps}
+    \caption{}
+    \label{fig:alliance_comm}
+\end{figure}
+
+\newpage
+\subsection{RTA Network}
+As seen In Figure \ref{fig:rta_2017} and Figure \ref{fig:rta_2019}, there has not been a big change with RTA communities, which may be attributed to a relatively small increase in new RTAs during this time.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth, trim={0 2cm 0 0.5cm}, clip]{1_22_paper/images/communities/rta_communities_2017.eps}
+    \caption{}
+    \label{fig:rta_2017}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth, trim={0 2cm 0 0.5cm}, clip]{1_22_paper/images/communities/rta_communities_2019.eps}
+    \caption{}
+    \label{fig:rta_2019}
+\end{figure}
+
+\newpage
+\subsection{Distance Network}
+The distance network's communities are shown in Figure\ref{fig:distance} below.
+There is a large community of East Asian, South-East Asian, South Asian and Oceanian countries.
+West to this, there is a Middle-eastern community and a north-African and European community, and a sub-Saharan community.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth, trim={0 2cm 0 0.5cm}, clip]{1_22_paper/images/communities/dist_communities.eps}
+    \caption{}
+    \label{fig:distance}
+\end{figure}
+
+\newpage
+
+\section{Results}
+\subsection{Comparing Communities}
+\textbf{NMI results}
+\subsubsection{Analysis1: Impact of US-China trade war pre-2020}
+\paragraph{telecommunication vs alliance}
+If we focus on the years before the Covid-19 global pandemic, i.e. 2016-2019, we can see an increase in NMI between the telecommunication equipment communities and alliance communities.
+\paragraph{telecommunication vs distance}
+Contrary to this, we can see a diversion with the distance network communities.
+Since the distance network community structure represents the cost of trade, these two trends suggest that the pattern of world trade has become more sensitive to security, and less efficient.
+\paragraph{telecommunication vs total}
+The diversion with the total trade communities in 2016 can be attributed to a more fragmented world trade in 2016 whereas telecommunication community patterns were less fragmented.
+Another diversion with total trade communities in 2018 can be attributed that the trade in sub-Saharan Africa was more fragmented in the telecommunication equipment communities as opposed to communities in total trade which saw most countries in sub-Saharan Africa in one community.
+\paragraph{telecommunication vs RTA}
+As prior research suggests, the similarity between RTA community structure and telecommunication trade has not been very similar compared to other networks.
+This can be attributed to the fact that RTAs take years to implement, and diversion between trade flows and RTA trade flows can apparent in these times\cite{.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth, trim={0 1cm 0 0.5cm}, clip]{1_22_paper/images/nmis/tele_v_others_2.eps}
+    \caption{}
+    \label{fig:product_nmi}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth, trim={0 1cm 0 0.5cm}, clip]{1_22_paper/images/nmis/total_v_others_2.eps}
+    \caption{}
+    \label{fig:others_nmi}
+\end{figure}
+
+\newpage
+
+\section{Conclusion}
+\newpage
+
+\section{References}
+\newpage
+
+\section{Acknowledgements}
+\newpage
+
+\bibliographystyle{unsrt}
+\bibliography{thesis.bib}
+
+% Add more sections or content as needed
+
+\end{document}
